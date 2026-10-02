@@ -1,6 +1,6 @@
 # flight-indicators
 
-![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading and vertical speed instruments](docs/demo.png)
+![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading and vertical speed instruments](https://raw.githubusercontent.com/fordnox/flight-indicators/main/docs/demo.png)
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
