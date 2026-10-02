@@ -1,0 +1,38 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      # Publishing is via trusted publishing (OIDC): npm mints a short-lived
+      # credential from this workflow's identity, so no token is stored here
+      # at all. Needs npm 11.5.1+, newer than the one bundled with Node 22.
+      # `flight-indicators` must name this repo and this workflow file as its
+      # trusted publisher on npmjs.com, otherwise the publish fails with ENEEDAUTH.
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Install dependencies
+        run: npm ci
+      # `npm publish` runs prepublishOnly (typecheck, test, build) first.
+      - name: Publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "flight-indicators@$VERSION" version >/dev/null 2>&1; then
+            echo "flight-indicators@$VERSION already on npm, skipping"
+          else
+            npm publish --provenance --access public
+          fi

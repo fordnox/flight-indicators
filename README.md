@@ -114,14 +114,18 @@ npm run typecheck
 npm run build      # outputs dist/ (ESM + CJS + .d.ts)
 ```
 
-## Publishing
+## Releasing
 
-```bash
-npm login
-npm publish        # prepublishOnly runs typecheck, tests and build first
-```
+Releases run from GitHub Actions:
 
-For later releases, run `npm version patch|minor|major` and then `npm publish`.
+- **CI** (`ci.yml`) runs on every push and pull request. It typechecks, tests and builds on Node 22 and 24, then installs the packed tarball on Node 18, 20 and 22 and checks that every component renders.
+- **Release** (`release.yml`) is started by hand from the Actions tab, where you choose `patch`, `minor` or `major`. It bumps the version, commits, tags, creates a GitHub release and then triggers Publish.
+- **Publish** (`publish.yml`) publishes to npm with provenance using [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored. It skips versions that are already on npm, so it is safe to re-run.
+
+One-time setup:
+
+1. Publish the first version by hand (`npm login && npm publish`), because npm can only set a trusted publisher on a package that already exists.
+2. On npmjs.com, open the package's **Settings**, then **Trusted publishing**, and add GitHub Actions with this repository and the workflow file `publish.yml`.
 
 ## License
 
