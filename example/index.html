@@ -8,9 +8,12 @@
       body { margin: 0; font-family: system-ui, sans-serif; background: #15181c; color: #e6e6e6; }
       main { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
       .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; justify-items: center; }
-      .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 24px; margin: 24px 0; }
-      label { display: grid; grid-template-columns: 110px 1fr 56px; gap: 8px; align-items: center; font-size: 14px; }
-      output { text-align: right; font-variant-numeric: tabular-nums; }
+      .simulate { display: inline-flex; gap: 8px; align-items: center; }
+      .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 24px; margin: 24px 0; }
+      .control { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+      .control-head { display: flex; justify-content: space-between; }
+      .control input { width: 100%; margin: 0; }
+      output { font-variant-numeric: tabular-nums; color: #9fb3c8; }
     </style>
   </head>
   <body>

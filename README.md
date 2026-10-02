@@ -1,5 +1,7 @@
 # flight-indicators
 
+![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading and vertical speed instruments](docs/demo.png)
+
 Modern SVG flight instruments for React, with no runtime dependencies.
 
 - Six instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed** and **Turn coordinator**

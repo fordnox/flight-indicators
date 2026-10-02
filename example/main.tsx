@@ -48,15 +48,18 @@ function App() {
   return (
     <main>
       <h1>flight-indicators</h1>
-      <label style={{ display: 'flex', gap: 8 }}>
+      <label className="simulate">
         <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> Simulate flight
       </label>
       <div className="controls">
         {(Object.keys(RANGES) as Array<keyof State>).map((k) => {
           const [min, max, step] = RANGES[k];
           return (
-            <label key={k}>
-              {k}
+            <label key={k} className="control">
+              <span className="control-head">
+                {k}
+                <output>{s[k].toFixed(step < 1 ? 2 : 0)}</output>
+              </span>
               <input
                 type="range"
                 min={min}
@@ -68,7 +71,6 @@ function App() {
                   setS({ ...s, [k]: Number(e.target.value) });
                 }}
               />
-              <output>{s[k].toFixed(step < 1 ? 2 : 0)}</output>
             </label>
           );
         })}

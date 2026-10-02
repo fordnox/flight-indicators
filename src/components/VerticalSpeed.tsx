@@ -44,8 +44,8 @@ export function VerticalSpeed({ verticalSpeed = 0, max = 2000, ...props }: Verti
 
       <text x={CENTER - 80} y={CENTER - 40} fill="#ccc" fontSize="18" textAnchor="middle">UP</text>
       <text x={CENTER - 80} y={CENTER + 50} fill="#ccc" fontSize="18" textAnchor="middle">DN</text>
-      <text x={CENTER + 40} y={CENTER - 62} fill="#ccc" fontSize="14" textAnchor="middle">VERTICAL SPEED</text>
-      <text x={CENTER + 40} y={CENTER + 70} fill="#ccc" fontSize="12" textAnchor="middle">1000 FT PER MIN</text>
+      <text x={CENTER + 10} y={CENTER - 75} fill="#ccc" fontSize="13" textAnchor="middle">VERTICAL SPEED</text>
+      <text x={CENTER + 10} y={CENTER + 82} fill="#ccc" fontSize="12" textAnchor="middle">1000 FT PER MIN</text>
 
       <g data-testid="vsi-needle" style={motionStyle(`rotate(${angle(vs)}deg)`, duration)}>
         <path d={`M ${CENTER - 5} ${CENTER + 30} L ${CENTER - 4} ${CENTER - 140} L ${CENTER} ${CENTER - 165} L ${CENTER + 4} ${CENTER - 140} L ${CENTER + 5} ${CENTER + 30} Z`} fill="#fff" />
