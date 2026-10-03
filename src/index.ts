@@ -4,4 +4,5 @@ export { Airspeed, type AirspeedProps, type AirspeedArcs } from './components/Ai
 export { Altimeter, type AltimeterProps, type PressureUnit } from './components/Altimeter';
 export { VerticalSpeed, type VerticalSpeedProps } from './components/VerticalSpeed';
 export { TurnCoordinator, type TurnCoordinatorProps } from './components/TurnCoordinator';
+export { WindIndicator, type WindIndicatorProps, type RunwaySide } from './components/WindIndicator';
 export type { InstrumentProps } from './components/Instrument';

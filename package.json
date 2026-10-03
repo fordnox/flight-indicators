@@ -1,7 +1,7 @@
 {
   "name": "flight-indicators",
   "version": "1.0.1",
-  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed and turn coordinator.",
+  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed, turn coordinator and wind/runway.",
   "keywords": [
     "react",
     "flight",
@@ -14,6 +14,8 @@
     "heading",
     "variometer",
     "turn-coordinator",
+    "wind",
+    "runway",
     "svg",
     "gauge"
   ],

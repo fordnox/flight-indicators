@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Six instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed** and **Turn coordinator**
+- Seven instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator** and **Wind / runway**
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -30,6 +30,7 @@ import {
   Altimeter,
   VerticalSpeed,
   TurnCoordinator,
+  WindIndicator,
 } from 'flight-indicators';
 
 export function Panel({ data }) {
@@ -41,6 +42,7 @@ export function Panel({ data }) {
       <TurnCoordinator turnRate={data.turnRate} slip={data.slip} />
       <HeadingIndicator heading={data.heading} />
       <VerticalSpeed verticalSpeed={data.vs} />
+      <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
     </div>
   );
 }
@@ -105,6 +107,19 @@ Every instrument accepts these props:
 | ---------- | -------- | ------- | ------------------------------------------------------------------- |
 | `turnRate` | `number` | `0`     | Rate of turn in °/s. Positive means a right turn. At 3 °/s (a standard-rate turn) the wings line up with the L/R marks. |
 | `slip`     | `number` | `0`     | Position of the slip ball, from `-1` (full left) to `1` (full right). |
+
+### `<WindIndicator />`
+
+A north-up compass rose with the runway drawn to scale on its heading and the wind arrow on the rim. The runway end facing into the wind is the one in use: its number is lit and green chevrons mark the approach. Two windows show the wind (`134° 12G20KT`, or `CALM`) and the headwind and crosswind for the runway in use (`HW 8  XW 9R`).
+
+| Prop             | Type                | Default | Description                                                    |
+| ---------------- | ------------------- | ------- | -------------------------------------------------------------- |
+| `runway`         | `number`            | `0`     | Runway heading in degrees, either end (`90` means runway 09/27). |
+| `runwaySide`     | `"L" \| "C" \| "R"` |         | Parallel-runway letter for the `runway` end. The other end gets the mirrored letter. |
+| `windDirection`  | `number`            | `0`     | Direction the wind blows from, in degrees.                     |
+| `windSpeed`      | `number`            | `0`     | Wind speed in knots. Under 1 kt shows as calm.                 |
+| `windGust`       | `number`            |         | Gust speed in knots. Shown when higher than `windSpeed`.       |
+| `crosswindLimit` | `number`            | `15`    | Crosswind in knots (gusts included) above which the crosswind turns amber. |
 
 ## Development
 

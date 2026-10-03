@@ -7,6 +7,7 @@ import {
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
+  WindIndicator,
 } from '../src';
 
 const transformOf = (testId: string) => (screen.getByTestId(testId) as unknown as SVGElement).style.transform;
@@ -19,6 +20,7 @@ describe('rendering', () => {
     ['altimeter', <Altimeter />],
     ['vsi', <VerticalSpeed />],
     ['turn', <TurnCoordinator />],
+    ['wind', <WindIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -148,5 +150,33 @@ describe('TurnCoordinator', () => {
     render(<TurnCoordinator turnRate={-30} slip={-5} />);
     expect(transformOf('turn-aircraft')).toBe('rotate(-35deg)');
     expect(transformOf('turn-ball')).toBe('rotate(13deg)');
+  });
+});
+
+describe('WindIndicator', () => {
+  const text = (id: string) => screen.getByTestId(id).textContent;
+
+  it('rotates the runway and wind arrow and picks the end facing into the wind', () => {
+    render(<WindIndicator runway={90} windDirection={134} windSpeed={3} />);
+    expect(transformOf('wind-runway')).toBe('rotate(90deg)');
+    expect(transformOf('wind-arrow')).toBe('rotate(134deg)');
+    expect(text('wind-readout')).toBe('134° 3KT');
+    expect(text('wind-components')).toBe('HW 2XW 2R');
+    expect(document.querySelector('title')!.textContent).toContain('runway 09 in use');
+  });
+
+  it('switches to the reciprocal runway and mirrors the parallel-runway letter', () => {
+    const { container } = render(<WindIndicator runway={90} runwaySide="L" windDirection={250} windSpeed={20} windGust={28} />);
+    expect(container.querySelector('title')!.textContent).toContain('runway 27R in use');
+    expect(text('wind-readout')).toBe('250° 20G28KT');
+    expect(text('wind-components')).toBe('HW 19XW 7L');
+  });
+
+  it('flags crosswind over the limit and handles calm / NaN', () => {
+    const { rerender } = render(<WindIndicator runway={360} windDirection={90} windSpeed={20} />);
+    expect(screen.getByTestId('wind-components').lastElementChild!.getAttribute('fill')).toBe('#ffb000');
+    rerender(<WindIndicator runway={NaN} windDirection={NaN} windSpeed={0.4} />);
+    expect(text('wind-readout')).toBe('CALM');
+    expect((screen.getByTestId('wind-arrow') as unknown as SVGElement).style.opacity).toBe('0');
   });
 });

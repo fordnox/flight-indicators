@@ -5,7 +5,7 @@ const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const FI = require('flight-indicators');
 
-const expected = ['Airspeed', 'Altimeter', 'AttitudeIndicator', 'HeadingIndicator', 'TurnCoordinator', 'VerticalSpeed'];
+const expected = ['Airspeed', 'Altimeter', 'AttitudeIndicator', 'HeadingIndicator', 'TurnCoordinator', 'VerticalSpeed', 'WindIndicator'];
 assert.deepStrictEqual(Object.keys(FI).sort(), expected);
 
 for (const name of expected) {
