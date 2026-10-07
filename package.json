@@ -28,6 +28,7 @@
     "svg",
     "gauge"
   ],
+  "author": "Andrius Putna (https://github.com/fordnox)",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -58,6 +59,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsup",
+    "build:demo": "vite build",
+    "deploy:demo": "npm run build:demo && npx harvis deploy demo-dist --name flight-indicators",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

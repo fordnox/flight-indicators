@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>flight-indicators playground</title>
+    <title>flight-indicators: SVG flight instruments for React</title>
+    <meta name="description" content="Live demo of flight-indicators, modern dependency-free SVG flight instruments for React." />
+    <meta name="author" content="Andrius Putna" />
     <style>
       body { margin: 0; font-family: system-ui, sans-serif; background: #15181c; color: #e6e6e6; }
       main { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
@@ -13,6 +15,15 @@
       .radio-group { border: 0; margin: 0; padding: 0; gap: 16px; cursor: default; }
       .radio-group legend { float: left; padding: 0; margin-right: 4px; }
       [hidden] { display: none !important; }
+      a { color: #6cb6ff; }
+      .page-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+      .page-header h1 { margin: 0; }
+      .links { display: flex; gap: 10px; }
+      .links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid #2a3038; background: #1c2026; color: #e6e6e6; text-decoration: none; font-size: 14px; }
+      .links a:hover { border-color: #4a5563; }
+      .tagline { margin: 8px 0 20px; color: #9fb3c8; }
+      .tagline code { margin-left: 4px; padding: 2px 6px; border-radius: 4px; background: #1c2026; color: #e6e6e6; }
+      .page-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #2a3038; color: #9fb3c8; font-size: 14px; text-align: center; }
       .panel { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; background: #1c2026; border: 1px solid #2a3038; }
       .panel h2 { margin: 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb3c8; }
       .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; }
