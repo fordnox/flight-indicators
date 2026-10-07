@@ -1,5 +1,7 @@
 # flight-indicators
 
+[![npm downloads](https://img.shields.io/npm/dm/flight-indicators.svg)](https://www.npmjs.com/package/flight-indicators)
+
 ![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading, vertical speed, engine, VOR, fuel, flaps, angle of attack, wind / runway and data panel instruments](https://raw.githubusercontent.com/fordnox/flight-indicators/main/docs/demo.png)
 
 Modern SVG flight instruments for React, with no runtime dependencies.
