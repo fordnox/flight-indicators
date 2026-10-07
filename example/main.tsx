@@ -63,6 +63,50 @@ const toUnit = (value: number, from: TempUnit, to: TempUnit) => (from === to ? v
 const F = (value: number, u: TempUnit) => toUnit(value, 'F', u);
 const C = (value: number, u: TempUnit) => toUnit(value, 'C', u);
 
+/** Converts a temperature difference (no 32° offset). */
+const spanTo = (deltaC: number, u: TempUnit) => (u === 'C' ? deltaC : (deltaC * 9) / 5);
+const signed = (n: number, decimals = 0) => `${n > 0 ? '+' : ''}${n.toFixed(decimals)}`;
+const rad = (deg: number) => (deg * Math.PI) / 180;
+
+/**
+ * Values derived from the simulated state for the air data and navigation panels.
+ * Standard rules of thumb: ~30 ft per hPa, ISA lapse 1.98 °C / 1000 ft, 118.8 ft of density altitude per °C.
+ */
+function derived(s: State) {
+  const pressureAlt = s.altitude + (1013.25 - s.qnh) * 30;
+  const isaTemp = 15 - (1.98 * pressureAlt) / 1000;
+  const isaDev = s.oat - isaTemp;
+  const densityAlt = pressureAlt + 118.8 * isaDev;
+  const sigma = Math.max(0.05, Math.pow(1 - 6.8756e-6 * densityAlt, 4.2559));
+  const tas = s.speed / Math.sqrt(sigma);
+
+  // Wind triangle: air vector along the heading plus the wind blowing from windDir.
+  const vx = tas * Math.sin(rad(s.heading)) - s.windSpeed * Math.sin(rad(s.windDir));
+  const vy = tas * Math.cos(rad(s.heading)) - s.windSpeed * Math.cos(rad(s.windDir));
+  const gs = Math.hypot(vx, vy);
+  const track = norm((Math.atan2(vx, vy) * 180) / Math.PI);
+  const drift = ((track - s.heading + 540) % 360) - 180;
+  const headwind = s.windSpeed * Math.cos(rad(s.windDir - s.heading));
+  const crosswind = s.windSpeed * Math.sin(rad(s.windDir - s.heading));
+
+  // Fuel: the demo tanks are percent of 50 gal each, burned at the engine's fuel flow.
+  const fuel = (s.fuelL + s.fuelR) / 2;
+  const endurance = s.fuelF > 0 ? fuel / s.fuelF : Infinity;
+  const range = endurance * gs;
+
+  return { pressureAlt, isaDev, densityAlt, tas, gs, track, drift, headwind, crosswind, fuel, endurance, range };
+}
+
+/** Hours as H:MM. */
+const hhmm = (hours: number) => {
+  if (!Number.isFinite(hours)) return '--:--';
+  const m = Math.round(hours * 60);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+};
+
+const AMBER = '#ffb000';
+const RED = '#ff2a2a';
+
 /** One card per instrument: its title, the state keys it is driven by, and how to draw it. */
 const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit) => ReactNode }> = [
   { title: 'Airspeed', keys: ['speed'], render: (s) => <Airspeed size={SIZE} speed={s.speed} /> },
@@ -143,10 +187,52 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
           { name: 'QNH', value: s.qnh, unit: 'hPa' },
           { name: 'SQUAWK', value: '7000' },
           { name: 'OAT', value: C(s.oat, u), unit: `°${u}`, color: s.oat <= 0 ? '#3cc8ff' : undefined },
-          { name: 'GS', value: Math.max(0, s.speed - s.windSpeed * Math.cos(((s.windDir - s.heading) * Math.PI) / 180)), unit: 'KT' },
+          { name: 'GS', value: derived(s).gs, unit: 'KT' },
         ]}
       />
     ),
+  },
+  {
+    title: 'Air data',
+    keys: ['speed', 'altitude', 'qnh', 'oat', 'windDir', 'windSpeed'],
+    render: (s, u) => {
+      const d = derived(s);
+      return (
+        <DataPanel
+          size={SIZE}
+          heading="Air data"
+          fields={[
+            { name: 'TAS', value: d.tas, unit: 'KT' },
+            { name: 'PRESS ALT', value: d.pressureAlt, unit: 'FT' },
+            { name: 'DENS ALT', value: d.densityAlt, unit: 'FT', color: d.densityAlt - d.pressureAlt > 1500 ? AMBER : undefined },
+            { name: 'ISA DEV', value: signed(spanTo(d.isaDev, u)), unit: `°${u}` },
+            { name: d.headwind >= 0 ? 'HEADWIND' : 'TAILWIND', value: Math.abs(d.headwind), unit: 'KT' },
+            { name: 'XWIND', value: `${Math.abs(d.crosswind).toFixed(0)}${d.crosswind >= 0 ? 'R' : 'L'}`, unit: 'KT' },
+          ]}
+        />
+      );
+    },
+  },
+  {
+    title: 'Navigation',
+    keys: ['heading', 'windDir', 'windSpeed', 'fuelL', 'fuelR', 'fuelF'],
+    render: (s) => {
+      const d = derived(s);
+      return (
+        <DataPanel
+          size={SIZE}
+          heading="Nav / fuel"
+          fields={[
+            { name: 'GS', value: d.gs, unit: 'KT' },
+            { name: 'TRACK', value: String(Math.round(d.track) % 360).padStart(3, '0'), unit: '°' },
+            { name: 'DRIFT', value: `${Math.abs(d.drift).toFixed(0)}${d.drift >= 0 ? 'R' : 'L'}`, unit: '°' },
+            { name: 'FUEL', value: d.fuel, unit: 'GAL', decimals: 1, color: d.fuel < 10 ? RED : undefined },
+            { name: 'ENDURANCE', value: hhmm(d.endurance), unit: 'H:MM', color: d.endurance < 0.75 ? RED : d.endurance < 1.5 ? AMBER : undefined },
+            { name: 'RANGE', value: Number.isFinite(d.range) ? d.range : '---', unit: 'NM' },
+          ]}
+        />
+      );
+    },
   },
 ];
 
@@ -159,7 +245,7 @@ function App() {
   const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
 
   useEffect(() => {
     if (!simulate) return;
