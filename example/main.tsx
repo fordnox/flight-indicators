@@ -4,6 +4,7 @@ import {
   Airspeed,
   Altimeter,
   AttitudeIndicator,
+  DataPanel,
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
@@ -11,7 +12,7 @@ import {
   WindIndicator,
 } from '../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -21,6 +22,7 @@ const RANGES: Record<Key, [number, number, number]> = {
   speed: [0, 200, 1],
   altitude: [-1000, 30000, 10],
   qnh: [950, 1050, 1],
+  oat: [-40, 50, 1],
   vs: [-2000, 2000, 50],
   turn: [-6, 6, 0.1],
   slip: [-1, 1, 0.05],
@@ -48,13 +50,32 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
     render: (s) => <WindIndicator size={SIZE} runway={s.runway} windDirection={s.windDir} windSpeed={s.windSpeed} windGust={s.gust} />,
   },
   { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
+  {
+    title: 'Data panel',
+    keys: ['oat', 'qnh'],
+    render: (s) => (
+      <DataPanel
+        size={SIZE}
+        heading="Radios"
+        fields={[
+          { name: 'COM', value: '118.700', unit: 'MHz' },
+          { name: 'VLOC', value: 110.5, unit: 'MHz', decimals: 2 },
+          { name: 'QNH', value: s.qnh, unit: 'hPa' },
+          { name: 'SQUAWK', value: '7000' },
+          { name: 'OAT', value: s.oat, unit: '°C', color: s.oat <= 0 ? '#3cc8ff' : undefined },
+          { name: 'GS', value: Math.max(0, s.speed - s.windSpeed * Math.cos(((s.windDir - s.heading) * Math.PI) / 180)), unit: 'KT' },
+        ]}
+      />
+    ),
+  },
 ];
 
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15 });
   const [simulate, setSimulate] = useState(true);
+  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     if (!simulate) return;
@@ -74,6 +95,7 @@ function App() {
         windSpeed: 12 + 6 * Math.sin(t / 5),
         gust: 22 + 4 * Math.sin(t / 3),
         radial: norm(270 + 8 * Math.sin(t / 6)),
+        oat: 15 - 2 * (prev.altitude / 1000),
       }));
     }, 250);
     return () => clearInterval(id);
@@ -82,15 +104,20 @@ function App() {
   return (
     <main>
       <h1>flight-indicators</h1>
-      <label className="simulate">
-        <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> Simulate flight
-      </label>
+      <div className="toolbar">
+        <label className="toggle">
+          <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> Simulate flight
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={showControls} onChange={(e) => setShowControls(e.target.checked)} /> Show controls
+        </label>
+      </div>
       <div className="grid">
         {PANELS.map(({ title, keys, render }) => (
           <section key={title} className="panel">
             <h2>{title}</h2>
             {render(s)}
-            <div className="controls">
+            <div className="controls" hidden={!showControls}>
               {keys.map((k) => {
                 const [min, max, step] = RANGES[k];
                 return (

@@ -6,4 +6,5 @@ export { VerticalSpeed, type VerticalSpeedProps } from './components/VerticalSpe
 export { TurnCoordinator, type TurnCoordinatorProps } from './components/TurnCoordinator';
 export { WindIndicator, type WindIndicatorProps, type RunwaySide } from './components/WindIndicator';
 export { VorIndicator, vorDeviation, type VorIndicatorProps, type ToFrom } from './components/VorIndicator';
+export { DataPanel, formatValue, MAX_FIELDS, type DataPanelProps, type DataField } from './components/DataPanel';
 export type { InstrumentProps } from './components/Instrument';

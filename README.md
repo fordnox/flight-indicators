@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Eight instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI** and **Wind / runway**
+- Nine instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -32,6 +32,7 @@ import {
   TurnCoordinator,
   VorIndicator,
   WindIndicator,
+  DataPanel,
 } from 'flight-indicators';
 
 export function Panel({ data }) {
@@ -45,6 +46,15 @@ export function Panel({ data }) {
       <VerticalSpeed verticalSpeed={data.vs} />
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
+      <DataPanel
+        heading="Radios"
+        fields={[
+          { name: 'OAT', value: data.oat, unit: '°C' },
+          { name: 'VLOC', value: data.nav1, unit: 'MHz', decimals: 2 },
+          { name: 'COM', value: data.com1, unit: 'MHz', decimals: 3 },
+          { name: 'Squawk', value: data.squawk },
+        ]}
+      />
     </div>
   );
 }
@@ -136,6 +146,25 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 | `signal`    | `boolean`                | `true`  | `false` shows the red NAV flag, centres the needle and hides TO/FROM. |
 
 `vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
+
+### `<DataPanel />`
+
+A general-purpose instrument for readouts that have no dedicated gauge: temperatures, radio frequencies, transponder code, fuel, timers, anything. It draws a square panel inside the usual round bezel and fills it with a grid of up to six cells. Each cell shows a name, a value and an optional unit. One or two fields stack vertically; three or more use two columns. Long values shrink to fit.
+
+| Prop      | Type          | Default | Description                                                              |
+| --------- | ------------- | ------- | ------------------------------------------------------------------------ |
+| `fields`  | `DataField[]` | `[]`    | Readouts to show. Only the first six are drawn.                          |
+| `heading` | `string`      |         | Caption printed above the panel, also used in the accessible label.      |
+
+Each `DataField`:
+
+| Field      | Type               | Default | Description                                                     |
+| ---------- | ------------------ | ------- | --------------------------------------------------------------- |
+| `name`     | `string`           |         | Caption above the value, e.g. `"COM1"`.                         |
+| `value`    | `string \| number` |         | Strings are printed as given. Numbers are formatted with `decimals`; `NaN` shows as `---`. |
+| `unit`     | `string`           |         | Printed in the corner of the cell, e.g. `"MHz"`.                 |
+| `decimals` | `number`           | `0`     | Decimal places for numeric values.                              |
+| `color`    | `string`           | white   | Colour of the value text, e.g. amber for a caution.             |
 
 ## Development
 
