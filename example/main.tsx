@@ -126,6 +126,11 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
   },
   { title: 'Angle of attack', keys: ['aoa'], render: (s) => <AoaIndicator size={SIZE} aoa={s.aoa} optimum={10} max={18} showValue /> },
   {
+    title: 'Wind / runway',
+    keys: ['runway', 'windDir', 'windSpeed', 'gust'],
+    render: (s) => <WindIndicator size={SIZE} runway={s.runway} windDirection={s.windDir} windSpeed={s.windSpeed} windGust={s.gust} />,
+  },
+  {
     title: 'Data panel',
     keys: ['oat', 'qnh'],
     render: (s, u) => (
@@ -142,11 +147,6 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
         ]}
       />
     ),
-  },
-  {
-    title: 'Wind / runway',
-    keys: ['runway', 'windDir', 'windSpeed', 'gust'],
-    render: (s) => <WindIndicator size={SIZE} runway={s.runway} windDirection={s.windDir} windSpeed={s.windSpeed} windGust={s.gust} />,
   },
 ];
 
