@@ -5,6 +5,7 @@ import {
   Altimeter,
   AttitudeIndicator,
   DataPanel,
+  EngineIndicator,
   FuelIndicator,
   HeadingIndicator,
   TurnCoordinator,
@@ -28,6 +29,7 @@ describe('rendering', () => {
     ['vor', <VorIndicator />],
     ['data', <DataPanel />],
     ['fuel', <FuelIndicator />],
+    ['engine', <EngineIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -294,5 +296,68 @@ describe('FuelIndicator', () => {
     rerender(<FuelIndicator tanks={[{ name: 'L', quantity: NaN }]} />);
     expect(transformOf('fuel-bar-0')).toBe('scaleY(0)');
     expect(value(0).textContent).toBe('0.0');
+  });
+});
+
+describe('EngineIndicator', () => {
+  const text = (id: string) => screen.getByTestId(id).textContent;
+
+  it('drives the arcs, bars, cylinders and bottom readouts from the reference values', () => {
+    const { container } = render(
+      <EngineIndicator
+        power={75}
+        manifold={{ value: 27.4 }}
+        rpm={{ value: 2400 }}
+        cht={[360, 370, 385, 365, 380, 350]}
+        egt={[1350, 1300, 1385, 1320, 1340, 1360]}
+        tit={1438}
+        gauges={[
+          { label: 'Oil P', value: 50, min: 0, max: 100, unit: 'PSI' },
+          { label: 'Oil T', value: 202, min: 0, max: 250, unit: '°F' },
+          { label: 'Fuel P', value: 15.9, min: 0, max: 30, unit: 'PSI', decimals: 1 },
+          { label: 'Fuel F', value: 15.5, min: 0, max: 30, unit: 'GPH', decimals: 1 },
+        ]}
+        amps={10}
+        volts={28.1}
+        fuelLeft={26}
+        fuelRight={31}
+        fuelCapacity={40}
+      />,
+    );
+    // MAN: (27.4 - 10) / 25 of a 200° sweep starting at -100°.
+    expect(transformOf('engine-man')).toBe('rotate(39.2deg)');
+    expect(transformOf('engine-rpm')).toBe('rotate(60deg)');
+    expect(text('engine-cht')).toBe('385');
+    expect(text('engine-egt')).toBe('1385');
+    expect(text('engine-tit')).toBe('1438');
+    expect(transformOf('engine-cht-2')).toBe('scaleY(0.77)');
+    expect(transformOf('engine-egt-0')).toBe(`scaleY(${1350 / 1700})`);
+    expect(transformOf('engine-bar-0')).toBe('translate(43px, 0px)');
+    expect(transformOf('engine-fuel-left')).toBe('scaleY(0.65)');
+    expect(text('engine-fuel')).toBe('2631');
+    expect(text('engine-amps')).toBe('10A');
+    expect(text('engine-volts')).toBe('28.1V');
+    expect(container.querySelector('title')!.textContent).toBe(
+      'Engine: power 75%, MAN 27.4 IN, RPM 2400, CHT 385°F, EGT 1385°F, TIT 1438°F, Oil P 50 PSI, Oil T 202 °F, Fuel P 15.9 PSI, Fuel F 15.5 GPH, 10 A, fuel 26/31 GAL, 28.1 V',
+    );
+  });
+
+  it('colours readouts by band and clamps to the scale', () => {
+    render(<EngineIndicator manifold={{ value: 30 }} rpm={{ value: 9999 }} gauges={[{ label: 'Oil P', value: 5, min: 0, max: 100, low: 10 }]} />);
+    const fills = [...document.querySelectorAll('text')].map((t) => [t.textContent, t.getAttribute('fill')]);
+    expect(fills).toContainEqual(['30.0IN', '#ffd400']);
+    expect(fills).toContainEqual(['3000', '#ff3030']);
+    expect(fills).toContainEqual(['5', '#ff3030']);
+    expect(transformOf('engine-rpm')).toBe('rotate(100deg)');
+    expect(transformOf('engine-bar-0')).toBe('translate(4.3px, 0px)');
+  });
+
+  it('hides sections it has no data for and limits the cylinder count', () => {
+    render(<EngineIndicator cht={Array.from({ length: 9 }, () => 300)} />);
+    expect(screen.queryByTestId('engine-egt')).toBeNull();
+    expect(screen.queryByTestId('engine-tit-bar')).toBeNull();
+    expect(screen.getAllByTestId(/^engine-cht-\d/)).toHaveLength(6);
+    expect(text('engine-amps')).toBe('---A');
+    expect(document.querySelector('title')!.textContent).toBe('Engine: MAN 10.0 IN, RPM 0, CHT 300°F, Oil P 0 PSI, Oil T 0 °F, Fuel P 0.0 PSI, Fuel F 0.0 GPH');
   });
 });

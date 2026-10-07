@@ -1,7 +1,7 @@
 {
   "name": "flight-indicators",
   "version": "1.0.3",
-  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed, turn coordinator, VOR/CDI, wind/runway, fuel and a custom data panel.",
+  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed, turn coordinator, VOR/CDI, wind/runway, fuel, engine monitor and a custom data panel.",
   "keywords": [
     "react",
     "flight",
@@ -18,6 +18,8 @@
     "cdi",
     "dashboard",
     "fuel",
+    "engine",
+    "egt",
     "wind",
     "runway",
     "svg",

@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Ten instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel** and a custom **Data panel** for any readouts you like
+- Eleven instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -33,6 +33,7 @@ import {
   VorIndicator,
   WindIndicator,
   FuelIndicator,
+  EngineIndicator,
   DataPanel,
 } from 'flight-indicators';
 
@@ -48,6 +49,7 @@ export function Panel({ data }) {
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
+      <EngineIndicator manifold={{ value: data.map }} rpm={{ value: data.rpm }} cht={data.cht} egt={data.egt} fuelLeft={data.fuelL} fuelRight={data.fuelR} />
       <DataPanel
         heading="Radios"
         fields={[
@@ -161,6 +163,32 @@ A digital fuel quantity gauge: one vertical bar graph per tank with a numeric re
 | `low`      | `number`     | 10% of capacity | Quantity at or below which a tank turns red.                 |
 | `decimals` | `number`     | `1`       | Decimal places in the readouts.                                    |
 | `label`    | `string`     | `"FUEL"`  | Caption along the bottom of the display.                           |
+
+### `<EngineIndicator />`
+
+An all-in-one engine monitor in the style of a JPI EDM. The top holds a percent-power readout and two arc gauges for manifold pressure and RPM. The left half shows the hottest CHT, EGT and TIT with a per-cylinder bar graph (green CHT, blue EGT, white TIT) and a dashed red CHT limit line. The right half has up to four horizontal bar gauges, and the bottom row shows alternator amps, the two fuel tanks and bus volts. Sections you pass no data for are left blank.
+
+Scaled gauges share one shape, `EngineGauge`: `{ value, min, max, green?, yellow?, low?, high?, unit?, decimals? }`. `green` and `yellow` are `[from, to]` bands; `low` and `high` are red limits. A readout turns yellow inside the yellow band and red at or beyond a red limit.
+
+| Prop              | Type              | Default        | Description                                                        |
+| ----------------- | ----------------- | -------------- | ------------------------------------------------------------------ |
+| `power`           | `number`          |                | Percent power printed at the top.                                  |
+| `manifold`        | `EngineGauge`     | 10–35 inHg     | Manifold pressure arc. Only `value` is needed to use the default scale. |
+| `rpm`             | `EngineGauge`     | 0–3000         | Engine speed arc.                                                  |
+| `cht`             | `number[]`        | `[]`           | CHT per cylinder, up to six.                                       |
+| `egt`             | `number[]`        | `[]`           | EGT per cylinder, up to six.                                       |
+| `tit`             | `number`          |                | Turbine inlet temperature, drawn as the `T` column.                |
+| `chtLimit`        | `number`          | `400`          | CHT at which the dashed red line is drawn.                         |
+| `chtScale`        | `number`          | `500`          | CHT that fills a bar to the top.                                   |
+| `egtScale`        | `number`          | `1700`         | EGT or TIT that fills a bar to the top.                            |
+| `temperatureUnit` | `string`          | `"°F"`         | Printed after the CHT/EGT/TIT headings.                            |
+| `gauges`          | `EngineBarGauge[]`| oil P, oil T, fuel P, fuel F | Horizontal bar gauges, each an `EngineGauge` plus a `label`. Up to four. |
+| `amps`            | `number`          |                | Alternator current.                                                |
+| `volts`           | `number`          |                | Bus voltage, shown with one decimal.                               |
+| `fuelLeft`        | `number`          |                | Left tank quantity.                                                |
+| `fuelRight`       | `number`          |                | Right tank quantity.                                               |
+| `fuelCapacity`    | `number`          | `30`           | Full quantity of each tank, used to fill the tank icons.           |
+| `fuelUnit`        | `string`          | `"GAL"`        | Printed under the fuel quantities.                                 |
 
 ### `<DataPanel />`
 
