@@ -4,6 +4,7 @@ import {
   Airspeed,
   Altimeter,
   AttitudeIndicator,
+  DataPanel,
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
@@ -24,6 +25,7 @@ describe('rendering', () => {
     ['turn', <TurnCoordinator />],
     ['wind', <WindIndicator />],
     ['vor', <VorIndicator />],
+    ['data', <DataPanel />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -223,5 +225,42 @@ describe('VorIndicator', () => {
     expect(opacityOf('vor-nav-flag')).toBe('0');
     expect(transformOf('vor-card')).toBe('rotate(0deg)');
     expect(screen.getByTestId('vor-course').textContent).toBe('CRS 360');
+  });
+});
+
+describe('DataPanel', () => {
+  const value = (i: number) => screen.getByTestId(`data-value-${i}`).textContent;
+
+  it('formats numbers, strings and NaN and lays out the fields in a grid', () => {
+    const { container } = render(
+      <DataPanel
+        heading="Radios"
+        fields={[
+          { name: 'OAT', value: 14.6, unit: '°C' },
+          { name: 'VLOC', value: 110.5, unit: 'MHz', decimals: 2 },
+          { name: 'COM', value: '118.700', unit: 'MHz' },
+          { name: 'SQK', value: NaN, color: '#ffb000' },
+        ]}
+      />,
+    );
+    expect(value(0)).toBe('15');
+    expect(value(1)).toBe('110.50');
+    expect(value(2)).toBe('118.700');
+    expect(value(3)).toBe('---');
+    expect(screen.getByTestId('data-value-3').getAttribute('fill')).toBe('#ffb000');
+    expect(container.querySelector('title')!.textContent).toBe('Radios: OAT 15 °C, VLOC 110.50 MHz, COM 118.700 MHz, SQK ---');
+    // 4 fields → 2 columns: fields 0 and 1 share a row, 0 and 2 share a column.
+    const rect = (i: number) => screen.getByTestId(`data-field-${i}`).querySelector('rect')!;
+    expect(rect(0).getAttribute('y')).toBe(rect(1).getAttribute('y'));
+    expect(rect(0).getAttribute('x')).toBe(rect(2).getAttribute('x'));
+  });
+
+  it('draws at most six fields and copes with none', () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({ name: `F${i}`, value: i }));
+    const { rerender } = render(<DataPanel fields={many} />);
+    expect(screen.getAllByTestId(/^data-field-/)).toHaveLength(6);
+    rerender(<DataPanel />);
+    expect(screen.queryAllByTestId(/^data-field-/)).toHaveLength(0);
+    expect(document.querySelector('title')!.textContent).toBe('Data panel: no data');
   });
 });
