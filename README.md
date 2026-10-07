@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Eleven instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Twelve instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Flaps**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -33,6 +33,7 @@ import {
   VorIndicator,
   WindIndicator,
   FuelIndicator,
+  FlapIndicator,
   EngineIndicator,
   DataPanel,
 } from 'flight-indicators';
@@ -49,6 +50,7 @@ export function Panel({ data }) {
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
+      <FlapIndicator flaps={data.flaps} airspeed={data.ias} speedLimits={[{ flaps: 0, speed: 160 }, { flaps: 10, speed: 110 }]} />
       <EngineIndicator manifold={{ value: data.map }} rpm={{ value: data.rpm }} cht={data.cht} egt={data.egt} fuelLeft={data.fuelL} fuelRight={data.fuelR} />
       <DataPanel
         heading="Radios"
@@ -163,6 +165,21 @@ A digital fuel quantity gauge: one vertical bar graph per tank with a numeric re
 | `low`      | `number`     | 10% of capacity | Quantity at or below which a tank turns red.                 |
 | `decimals` | `number`     | `1`       | Decimal places in the readouts.                                    |
 | `label`    | `string`     | `"FUEL"`  | Caption along the bottom of the display.                           |
+
+### `<FlapIndicator />`
+
+A wing flap position indicator: a vertical LED bar graph that fills from the top as the flaps extend, green at the top through yellow and orange to red at full deflection, with a degree scale beside it and a pointer at the exact position. Optionally shows the maximum flap extension speed for the current setting, which turns red when `airspeed` exceeds it.
+
+| Prop          | Type               | Default        | Description                                                       |
+| ------------- | ------------------ | -------------- | ----------------------------------------------------------------- |
+| `flaps`       | `number`           | `0`            | Flap position in degrees. Clamped to `0…max`.                     |
+| `max`         | `number`           | `40`           | Full flap deflection in degrees.                                  |
+| `detents`     | `number[]`         | every 10°      | Scale labels in degrees.                                          |
+| `segments`    | `number`           | `20`           | Number of LED segments in the bar.                                |
+| `speedLimits` | `FlapSpeedLimit[]` |                | `{ flaps, speed }` pairs in knots: the max speed once flaps are at or beyond `flaps`. The highest reached entry is shown. Omit to hide the readout. |
+| `airspeed`    | `number`           |                | Current airspeed in knots, used to flag an overspeed.             |
+| `showMph`     | `boolean`          | `true`         | Also print the limit in mph.                                      |
+| `label`       | `string`           | `"WING FLAP"`  | Caption at the bottom of the dial.                                |
 
 ### `<EngineIndicator />`
 
