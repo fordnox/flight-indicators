@@ -72,7 +72,7 @@ export function DataPanel({ fields = [], heading, ...props }: DataPanelProps) {
         const fit = Math.min(valueSize, (cellW - 16) / (0.62 * Math.max(1, value.length)));
         return (
           <g key={i} data-testid={`data-field-${i}`}>
-            <rect x={x} y={y} width={cellW} height={cellH} rx="6" fill="#000" stroke="#333" strokeWidth="1.5" />
+            <rect x={x} y={y} width={cellW} height={cellH} rx="6" fill="#000" stroke="#262a30" strokeWidth="1" />
             <text x={x + 8} y={y + 12} fill="#9aa4b1" fontSize="12" fontWeight="bold" letterSpacing="1" dominantBaseline="central">
               {f.name.toUpperCase()}
             </text>

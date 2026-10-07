@@ -52,16 +52,18 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
   { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
   {
     title: 'Data panel',
-    keys: ['oat'],
+    keys: ['oat', 'qnh'],
     render: (s) => (
       <DataPanel
         size={SIZE}
         heading="Radios"
         fields={[
-          { name: 'OAT', value: s.oat, unit: '°C', color: s.oat <= 0 ? '#3cc8ff' : undefined },
-          { name: 'VLOC', value: 110.5, unit: 'MHz', decimals: 2 },
           { name: 'COM', value: '118.700', unit: 'MHz' },
+          { name: 'VLOC', value: 110.5, unit: 'MHz', decimals: 2 },
+          { name: 'QNH', value: s.qnh, unit: 'hPa' },
           { name: 'SQUAWK', value: '7000' },
+          { name: 'OAT', value: s.oat, unit: '°C', color: s.oat <= 0 ? '#3cc8ff' : undefined },
+          { name: 'GS', value: Math.max(0, s.speed - s.windSpeed * Math.cos(((s.windDir - s.heading) * Math.PI) / 180)), unit: 'KT' },
         ]}
       />
     ),
@@ -73,6 +75,7 @@ const norm = (deg: number) => ((deg % 360) + 360) % 360;
 function App() {
   const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15 });
   const [simulate, setSimulate] = useState(true);
+  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     if (!simulate) return;
@@ -101,15 +104,20 @@ function App() {
   return (
     <main>
       <h1>flight-indicators</h1>
-      <label className="simulate">
-        <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> Simulate flight
-      </label>
+      <div className="toolbar">
+        <label className="toggle">
+          <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} /> Simulate flight
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={showControls} onChange={(e) => setShowControls(e.target.checked)} /> Show controls
+        </label>
+      </div>
       <div className="grid">
         {PANELS.map(({ title, keys, render }) => (
           <section key={title} className="panel">
             <h2>{title}</h2>
             {render(s)}
-            <div className="controls">
+            <div className="controls" hidden={!showControls}>
               {keys.map((k) => {
                 const [min, max, step] = RANGES[k];
                 return (

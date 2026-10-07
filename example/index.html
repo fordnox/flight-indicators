@@ -8,7 +8,9 @@
       body { margin: 0; font-family: system-ui, sans-serif; background: #15181c; color: #e6e6e6; }
       main { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
       .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 24px; }
-      .simulate { display: inline-flex; gap: 8px; align-items: center; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 24px; }
+      .toggle { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+      [hidden] { display: none !important; }
       .panel { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; background: #1c2026; border: 1px solid #2a3038; }
       .panel h2 { margin: 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb3c8; }
       .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; }
