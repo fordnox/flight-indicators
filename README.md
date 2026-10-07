@@ -2,6 +2,8 @@
 
 [![npm downloads](https://img.shields.io/npm/dm/flight-indicators.svg)](https://www.npmjs.com/package/flight-indicators)
 
+**[Live demo](https://dandy-dolphin-457.harvis.page)**: every instrument running on simulated flight data, with sliders to drive them by hand.
+
 ![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading, vertical speed, engine, VOR, fuel, flaps, angle of attack, wind / runway and data panel instruments](https://raw.githubusercontent.com/fordnox/flight-indicators/main/docs/demo.png)
 
 Modern SVG flight instruments for React, with no runtime dependencies.
@@ -246,10 +248,12 @@ Each `DataField`:
 
 ```bash
 npm install
-npm run dev        # interactive playground (Vite) at http://localhost:5173
-npm test           # unit tests (Vitest)
+npm run dev         # interactive playground (Vite) at http://localhost:5173
+npm run build:demo  # static build of the playground in demo-dist/
+npm run deploy:demo # build and deploy the playground to harvis.dev (the live demo)
+npm test            # unit tests (Vitest)
 npm run typecheck
-npm run build      # outputs dist/ (ESM + CJS + .d.ts)
+npm run build       # outputs dist/ (ESM + CJS + .d.ts)
 ```
 
 ## Releasing
