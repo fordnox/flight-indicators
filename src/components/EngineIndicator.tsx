@@ -77,6 +77,13 @@ const LINE = '#8a8f99';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
+/** Full-width horizontal line at `y`, cut to fit inside the dial face (radius 182) with a small inset. */
+const DIAL_R = 182;
+function chord(y: number, inset = 8): string {
+  const half = Math.sqrt(Math.max(0, DIAL_R * DIAL_R - (y - CENTER) ** 2)) - inset;
+  return `M ${round2(CENTER - half)} ${y} H ${round2(CENTER + half)}`;
+}
+
 export const DEFAULT_MANIFOLD: EngineGauge = { min: 10, max: 35, green: [15, 29], yellow: [29, 31], high: 31, unit: 'IN', decimals: 1 };
 export const DEFAULT_RPM: EngineGauge = { min: 0, max: 3000, green: [800, 2500], yellow: [2500, 2700], high: 2700, decimals: 0 };
 export const DEFAULT_BAR_GAUGES: EngineBarGauge[] = [
@@ -321,9 +328,9 @@ export function EngineIndicator({
 
       {/* Section dividers. */}
       <g stroke={LINE} strokeWidth="1.5">
-        <path d="M 22 133 H 378" />
+        <path d={chord(133)} />
         <path d="M 200 133 V 298" />
-        <path d="M 30 298 H 370" />
+        <path d={chord(298)} />
         <path d="M 136 298 V 348 M 264 298 V 348" />
       </g>
 
