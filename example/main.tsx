@@ -52,8 +52,19 @@ const RANGES: Record<Key, [number, number, number]> = {
 
 const SIZE = 240;
 
+/** Temperature display mode for the whole page. */
+type TempUnit = 'F' | 'C';
+
+/** Native unit of each temperature key: engine temps are simulated in °F, OAT in °C. */
+const TEMP_KEYS: Partial<Record<Key, TempUnit>> = { cht: 'F', egt: 'F', oilT: 'F', oat: 'C' };
+
+/** Converts an absolute temperature from one unit to another. */
+const toUnit = (value: number, from: TempUnit, to: TempUnit) => (from === to ? value : to === 'C' ? ((value - 32) * 5) / 9 : (value * 9) / 5 + 32);
+const F = (value: number, u: TempUnit) => toUnit(value, 'F', u);
+const C = (value: number, u: TempUnit) => toUnit(value, 'C', u);
+
 /** One card per instrument: its title, the state keys it is driven by, and how to draw it. */
-const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNode }> = [
+const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit) => ReactNode }> = [
   { title: 'Airspeed', keys: ['speed'], render: (s) => <Airspeed size={SIZE} speed={s.speed} /> },
   { title: 'Attitude', keys: ['roll', 'pitch'], render: (s) => <AttitudeIndicator size={SIZE} roll={s.roll} pitch={s.pitch} /> },
   { title: 'Altimeter', keys: ['altitude', 'qnh'], render: (s) => <Altimeter size={SIZE} altitude={s.altitude} pressure={s.qnh} /> },
@@ -63,18 +74,22 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
   {
     title: 'Engine',
     keys: ['man', 'rpm', 'cht', 'egt', 'oilP', 'oilT', 'fuelP', 'fuelF'],
-    render: (s) => (
+    render: (s, u) => (
       <EngineIndicator
         size={SIZE}
         power={Math.round(((s.man - 10) / 25) * (s.rpm / 2700) * 100)}
         manifold={{ value: s.man }}
         rpm={{ value: s.rpm }}
-        cht={CYL_SPREAD.map((d) => s.cht + d)}
-        egt={CYL_SPREAD.map((d) => s.egt + d * 4)}
-        tit={s.egt + 55}
+        cht={CYL_SPREAD.map((d) => F(s.cht + d, u))}
+        egt={CYL_SPREAD.map((d) => F(s.egt + d * 4, u))}
+        tit={F(s.egt + 55, u)}
+        temperatureUnit={`°${u}`}
+        chtLimit={F(400, u)}
+        chtScale={F(500, u)}
+        egtScale={F(1700, u)}
         gauges={[
           { label: 'Oil P', value: s.oilP, min: 0, max: 100, green: [30, 60], low: 10, high: 95, unit: 'PSI' },
-          { label: 'Oil T', value: s.oilT, min: 0, max: 250, green: [75, 240], high: 240, unit: '°F' },
+          { label: 'Oil T', value: F(s.oilT, u), min: F(0, u), max: F(250, u), green: [F(75, u), F(240, u)], high: F(240, u), unit: `°${u}` },
           { label: 'Fuel P', value: s.fuelP, min: 0, max: 30, low: 1, high: 28, unit: 'PSI', decimals: 1 },
           { label: 'Fuel F', value: s.fuelF, min: 0, max: 30, green: [8, 20], unit: 'GPH', decimals: 1 },
         ]}
@@ -113,7 +128,7 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
   {
     title: 'Data panel',
     keys: ['oat', 'qnh'],
-    render: (s) => (
+    render: (s, u) => (
       <DataPanel
         size={SIZE}
         heading="Radios"
@@ -122,7 +137,7 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
           { name: 'VLOC', value: 110.5, unit: 'MHz', decimals: 2 },
           { name: 'QNH', value: s.qnh, unit: 'hPa' },
           { name: 'SQUAWK', value: '7000' },
-          { name: 'OAT', value: s.oat, unit: '°C', color: s.oat <= 0 ? '#3cc8ff' : undefined },
+          { name: 'OAT', value: C(s.oat, u), unit: `°${u}`, color: s.oat <= 0 ? '#3cc8ff' : undefined },
           { name: 'GS', value: Math.max(0, s.speed - s.windSpeed * Math.cos(((s.windDir - s.heading) * Math.PI) / 180)), unit: 'KT' },
         ]}
       />
@@ -143,6 +158,7 @@ const norm = (deg: number) => ((deg % 360) + 360) % 360;
 function App() {
   const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
   const [simulate, setSimulate] = useState(true);
+  const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
@@ -184,20 +200,29 @@ function App() {
         <label className="toggle">
           <input type="checkbox" checked={showControls} onChange={(e) => setShowControls(e.target.checked)} /> Show controls
         </label>
+        <fieldset className="toggle radio-group">
+          <legend>Temperature</legend>
+          {(['F', 'C'] as const).map((unit) => (
+            <label key={unit} className="toggle">
+              <input type="radio" name="temp-unit" value={unit} checked={tempUnit === unit} onChange={() => setTempUnit(unit)} /> °{unit}
+            </label>
+          ))}
+        </fieldset>
       </div>
       <div className="grid">
         {PANELS.map(({ title, keys, render }) => (
           <section key={title} className="panel">
             <h2>{title}</h2>
-            {render(s)}
+            {render(s, tempUnit)}
             <div className="controls" hidden={!showControls}>
               {keys.map((k) => {
                 const [min, max, step] = RANGES[k];
+                const native = TEMP_KEYS[k];
                 return (
                   <label key={k} className="control">
                     <span className="control-head">
                       {k}
-                      <output>{s[k].toFixed(step < 1 ? 2 : 0)}</output>
+                      <output>{native ? `${toUnit(s[k], native, tempUnit).toFixed(0)}°${tempUnit}` : s[k].toFixed(step < 1 ? 2 : 0)}</output>
                     </span>
                     <input
                       type="range"
