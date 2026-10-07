@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import {
   Airspeed,
   Altimeter,
+  AoaIndicator,
   AttitudeIndicator,
   DataPanel,
   EngineIndicator,
@@ -32,6 +33,7 @@ describe('rendering', () => {
     ['fuel', <FuelIndicator />],
     ['engine', <EngineIndicator />],
     ['flap', <FlapIndicator />],
+    ['aoa', <AoaIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -396,5 +398,41 @@ describe('FlapIndicator', () => {
     rerender(<FlapIndicator flaps={NaN} />);
     expect(lit()).toBe(0);
     expect(transformOf('flap-pointer')).toBe('translate(0px, 0px)');
+  });
+});
+
+describe('AoaIndicator', () => {
+  const lit = () => document.querySelectorAll('[data-lit="true"]').length;
+
+  it('lights green bars up to the donut at the optimum AoA', () => {
+    const { container } = render(<AoaIndicator aoa={10} min={0} optimum={10} max={20} />);
+    expect(lit()).toBe(5);
+    expect(screen.getByTestId('aoa-row-4').getAttribute('data-lit')).toBe('true');
+    expect(screen.getByTestId('aoa-row-5').getAttribute('data-lit')).toBe('false');
+    expect(container.querySelector('title')!.textContent).toBe('AOA: 10.0° (optimum)');
+  });
+
+  it('spaces rows evenly below and above the optimum', () => {
+    const { rerender } = render(<AoaIndicator aoa={4.9} optimum={10} />);
+    expect(lit()).toBe(2);
+    rerender(<AoaIndicator aoa={15} optimum={10} />);
+    expect(lit()).toBe(8);
+  });
+
+  it('lights everything and flashes the chevrons at the critical AoA', () => {
+    const { container } = render(<AoaIndicator aoa={25} max={20} showValue />);
+    expect(lit()).toBe(11);
+    expect(container.querySelectorAll('animate').length).toBe(4);
+    expect(screen.getByTestId('aoa-value').textContent).toBe('25.0°');
+    expect(container.querySelector('title')!.textContent).toBe('AOA: 25.0° (stall warning)');
+  });
+
+  it('shows nothing below min and survives NaN', () => {
+    const { rerender } = render(<AoaIndicator aoa={-2} />);
+    expect(lit()).toBe(0);
+    rerender(<AoaIndicator aoa={NaN} showValue />);
+    expect(lit()).toBe(0);
+    expect(screen.getByTestId('aoa-value').textContent).toBe('---');
+    expect(document.querySelectorAll('animate').length).toBe(0);
   });
 });

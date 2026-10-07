@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Twelve instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Flaps**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Thirteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -34,6 +34,7 @@ import {
   WindIndicator,
   FuelIndicator,
   FlapIndicator,
+  AoaIndicator,
   EngineIndicator,
   DataPanel,
 } from 'flight-indicators';
@@ -180,6 +181,19 @@ A wing flap position indicator: a vertical LED bar graph that fills from the top
 | `airspeed`    | `number`           |                | Current airspeed in knots, used to flag an overspeed.             |
 | `showMph`     | `boolean`          | `true`         | Also print the limit in mph.                                      |
 | `label`       | `string`           | `"WING FLAP"`  | Caption at the bottom of the dial.                                |
+
+### `<AoaIndicator />`
+
+An angle of attack indicator modelled on panel-mount LED AoA displays. Eleven rows light from the bottom up as the AoA rises: four green bars, a green donut at the optimum AoA, an amber bar, an amber split bar, two amber chevrons and two red chevrons pointing down ("lower the nose"). Rows below the donut are spaced evenly from `min` to `optimum`, rows above it from `optimum` to `max`. At `max` every row is lit and the chevrons flash.
+
+| Prop        | Type      | Default             | Description                                              |
+| ----------- | --------- | ------------------- | -------------------------------------------------------- |
+| `aoa`       | `number`  | `0`                 | Current angle of attack in degrees.                      |
+| `min`       | `number`  | `0`                 | AoA at which the bottom bar lights.                      |
+| `optimum`   | `number`  | halfway to `max`    | AoA at which the green donut lights (approach / L/Dmax). |
+| `max`       | `number`  | `20`                | Critical AoA: all rows lit and the chevrons flash.       |
+| `showValue` | `boolean` | `false`             | Print the AoA in degrees under the display.              |
+| `label`     | `string`  | `"AOA"`             | Caption at the bottom of the dial.                       |
 
 ### `<EngineIndicator />`
 

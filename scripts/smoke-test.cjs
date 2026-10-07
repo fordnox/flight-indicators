@@ -5,7 +5,7 @@ const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const FI = require('flight-indicators');
 
-const expected = ['Airspeed', 'Altimeter', 'AttitudeIndicator', 'DataPanel', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'HeadingIndicator', 'TurnCoordinator', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
+const expected = ['Airspeed', 'Altimeter', 'AoaIndicator', 'AttitudeIndicator', 'DataPanel', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'HeadingIndicator', 'TurnCoordinator', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
 // Components are the PascalCase exports; helpers and constants are filtered out.
 const components = (keys) => keys.filter((k) => /^[A-Z][a-z]/.test(k)).sort();
 assert.deepStrictEqual(components(Object.keys(FI)), expected);
