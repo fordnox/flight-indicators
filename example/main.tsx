@@ -6,6 +6,7 @@ import {
   AttitudeIndicator,
   DataPanel,
   EngineIndicator,
+  FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
   TurnCoordinator,
@@ -14,7 +15,7 @@ import {
   WindIndicator,
 } from '../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -35,6 +36,7 @@ const RANGES: Record<Key, [number, number, number]> = {
   oilT: [0, 250, 1],
   fuelP: [0, 30, 0.1],
   fuelF: [0, 30, 0.1],
+  flaps: [0, 40, 1],
   vs: [-2000, 2000, 50],
   turn: [-6, 6, 0.1],
   slip: [-1, 1, 0.05],
@@ -66,6 +68,23 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
     title: 'Fuel',
     keys: ['fuelL', 'fuelR'],
     render: (s) => <FuelIndicator size={SIZE} capacity={100} tanks={[{ name: 'Left', quantity: s.fuelL }, { name: 'Right', quantity: s.fuelR }]} />,
+  },
+  {
+    title: 'Flaps',
+    keys: ['flaps', 'speed'],
+    render: (s) => (
+      <FlapIndicator
+        size={SIZE}
+        flaps={s.flaps}
+        airspeed={s.speed}
+        speedLimits={[
+          { flaps: 0, speed: 160 },
+          { flaps: 10, speed: 110 },
+          { flaps: 20, speed: 96 },
+          { flaps: 30, speed: 85 },
+        ]}
+      />
+    ),
   },
   {
     title: 'Engine',
@@ -119,7 +138,7 @@ const CYL_SPREAD = [-25, -15, 0, -20, -5, -35];
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20 });
   const [simulate, setSimulate] = useState(true);
   const [showControls, setShowControls] = useState(true);
 

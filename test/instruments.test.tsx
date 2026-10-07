@@ -6,6 +6,7 @@ import {
   AttitudeIndicator,
   DataPanel,
   EngineIndicator,
+  FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
   TurnCoordinator,
@@ -30,6 +31,7 @@ describe('rendering', () => {
     ['data', <DataPanel />],
     ['fuel', <FuelIndicator />],
     ['engine', <EngineIndicator />],
+    ['flap', <FlapIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -359,5 +361,40 @@ describe('EngineIndicator', () => {
     expect(screen.getAllByTestId(/^engine-cht-\d/)).toHaveLength(6);
     expect(text('engine-amps')).toBe('---A');
     expect(document.querySelector('title')!.textContent).toBe('Engine: MAN 10.0 IN, RPM 0, CHT 300°F, Oil P 0 PSI, Oil T 0 °F, Fuel P 0.0 PSI, Fuel F 0.0 GPH');
+  });
+});
+
+describe('FlapIndicator', () => {
+  const lit = () => document.querySelectorAll('[data-lit="true"]').length;
+  const LIMITS = [
+    { flaps: 0, speed: 160 },
+    { flaps: 10, speed: 110 },
+    { flaps: 20, speed: 96 },
+  ];
+
+  it('lights segments from the top, moves the pointer and shows the limit for the current setting', () => {
+    const { container } = render(<FlapIndicator flaps={20} speedLimits={LIMITS} />);
+    expect(lit()).toBe(10);
+    expect(transformOf('flap-pointer')).toBe('translate(0px, 112px)');
+    expect(screen.getByTestId('flap-speed').textContent).toBe('96KTS');
+    expect(container.querySelector('title')!.textContent).toBe('WING FLAP: 20° of 40°, max 96 knots');
+  });
+
+  it('picks the highest reached limit and turns red when above it', () => {
+    const { rerender } = render(<FlapIndicator flaps={15} speedLimits={LIMITS} airspeed={120} />);
+    expect(screen.getByTestId('flap-speed').textContent).toBe('110KTS');
+    expect(screen.getByTestId('flap-speed').parentElement!.getAttribute('fill')).toBe('#ff2a2a');
+    rerender(<FlapIndicator flaps={15} speedLimits={LIMITS} airspeed={100} />);
+    expect(screen.getByTestId('flap-speed').parentElement!.getAttribute('fill')).toBe('#fff');
+  });
+
+  it('clamps, hides the speed without limits and survives NaN', () => {
+    const { rerender } = render(<FlapIndicator flaps={99} max={30} segments={10} />);
+    expect(lit()).toBe(10);
+    expect(screen.queryByTestId('flap-speed')).toBeNull();
+    expect(document.querySelector('title')!.textContent).toBe('WING FLAP: 30° of 30°');
+    rerender(<FlapIndicator flaps={NaN} />);
+    expect(lit()).toBe(0);
+    expect(transformOf('flap-pointer')).toBe('translate(0px, 0px)');
   });
 });
