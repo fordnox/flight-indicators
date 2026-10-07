@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Seven instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator** and **Wind / runway**
+- Eight instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI** and **Wind / runway**
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -30,6 +30,7 @@ import {
   Altimeter,
   VerticalSpeed,
   TurnCoordinator,
+  VorIndicator,
   WindIndicator,
 } from 'flight-indicators';
 
@@ -43,6 +44,7 @@ export function Panel({ data }) {
       <HeadingIndicator heading={data.heading} />
       <VerticalSpeed verticalSpeed={data.vs} />
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
+      <VorIndicator course={data.obs} radial={data.navRadial} />
     </div>
   );
 }
@@ -120,6 +122,20 @@ A north-up compass rose with the runway drawn to scale on its heading and the wi
 | `windSpeed`      | `number`            | `0`     | Wind speed in knots. Under 1 kt shows as calm.                 |
 | `windGust`       | `number`            |         | Gust speed in knots. Shown when higher than `windSpeed`.       |
 | `crosswindLimit` | `number`            | `15`    | Crosswind in knots (gusts included) above which the crosswind turns amber. |
+
+### `<VorIndicator />`
+
+A VOR / course deviation indicator with an OBS card. The card turns so the selected course sits under the top index, the needle shows how far the course line is to the left or right (5 dots each side, 2° per dot, ±10° full scale) and a triangle points TO or FROM the station. Give it the selected `course` and the `radial` the aircraft is on, and it works out the deflection and the TO/FROM flag. Alternatively pass `deviation` and `toFrom` straight from your avionics data.
+
+| Prop        | Type                     | Default | Description                                                        |
+| ----------- | ------------------------ | ------- | ------------------------------------------------------------------ |
+| `course`    | `number`                 | `0`     | Selected course (OBS) in degrees.                                  |
+| `radial`    | `number`                 |         | Radial from the station the aircraft is on, in degrees. Drives the needle and the TO/FROM flag. |
+| `deviation` | `number`                 |         | Course deviation in degrees, positive when the course is to the right. Clamped to ±10. Overrides `radial`. |
+| `toFrom`    | `"TO" \| "FROM" \| "OFF"` |         | TO/FROM flag. Overrides `radial`. `"OFF"` hides both triangles.    |
+| `signal`    | `boolean`                | `true`  | `false` shows the red NAV flag, centres the needle and hides TO/FROM. |
+
+`vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
 
 ## Development
 

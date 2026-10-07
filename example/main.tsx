@@ -7,10 +7,11 @@ import {
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
+  VorIndicator,
   WindIndicator,
 } from '../src';
 
-type State = Record<'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust', number>;
+type State = Record<'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial', number>;
 
 const RANGES: Record<keyof State, [number, number, number]> = {
   roll: [-180, 180, 1],
@@ -25,10 +26,14 @@ const RANGES: Record<keyof State, [number, number, number]> = {
   windDir: [0, 359, 1],
   windSpeed: [0, 40, 1],
   gust: [0, 50, 1],
+  course: [0, 359, 1],
+  radial: [0, 359, 1],
 };
 
+const norm = (deg: number) => ((deg % 360) + 360) % 360;
+
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272 });
   const [simulate, setSimulate] = useState(true);
 
   useEffect(() => {
@@ -48,6 +53,7 @@ function App() {
         windDir: (((150 + 70 * Math.sin(t / 8)) % 360) + 360) % 360,
         windSpeed: 12 + 6 * Math.sin(t / 5),
         gust: 22 + 4 * Math.sin(t / 3),
+        radial: norm(270 + 8 * Math.sin(t / 6)),
       }));
     }, 250);
     return () => clearInterval(id);
@@ -92,6 +98,7 @@ function App() {
         <HeadingIndicator size={size} heading={s.heading} />
         <VerticalSpeed size={size} verticalSpeed={s.vs} />
         <WindIndicator size={size} runway={s.runway} windDirection={s.windDir} windSpeed={s.windSpeed} windGust={s.gust} />
+        <VorIndicator size={size} course={s.course} radial={s.radial} />
       </div>
     </main>
   );

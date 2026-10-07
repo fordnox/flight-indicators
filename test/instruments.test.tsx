@@ -7,7 +7,9 @@ import {
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
+  VorIndicator,
   WindIndicator,
+  vorDeviation,
 } from '../src';
 
 const transformOf = (testId: string) => (screen.getByTestId(testId) as unknown as SVGElement).style.transform;
@@ -21,6 +23,7 @@ describe('rendering', () => {
     ['vsi', <VerticalSpeed />],
     ['turn', <TurnCoordinator />],
     ['wind', <WindIndicator />],
+    ['vor', <VorIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -178,5 +181,47 @@ describe('WindIndicator', () => {
     rerender(<WindIndicator runway={NaN} windDirection={NaN} windSpeed={0.4} />);
     expect(text('wind-readout')).toBe('CALM');
     expect((screen.getByTestId('wind-arrow') as unknown as SVGElement).style.opacity).toBe('0');
+  });
+});
+
+describe('VorIndicator', () => {
+  const opacityOf = (id: string) => screen.getByTestId(id).getAttribute('opacity');
+
+  it('computes deviation and TO/FROM from course and radial', () => {
+    expect(vorDeviation(360, 5)).toEqual({ deviation: -5, toFrom: 'FROM' });
+    expect(vorDeviation(360, 175)).toEqual({ deviation: -5, toFrom: 'TO' });
+    expect(vorDeviation(90, 270)).toEqual({ deviation: 0, toFrom: 'TO' });
+    expect(vorDeviation(90, 100)).toEqual({ deviation: -10, toFrom: 'FROM' });
+    expect(vorDeviation(90, 350)).toEqual({ deviation: 80, toFrom: 'TO' });
+    expect(vorDeviation(90, 10)).toEqual({ deviation: 80, toFrom: 'FROM' });
+  });
+
+  it('turns the card by -course and moves the needle 22px per dot', () => {
+    render(<VorIndicator course={90} radial={266} />);
+    expect(transformOf('vor-card')).toBe('rotate(-90deg)');
+    expect(transformOf('vor-needle')).toBe('translate(-44px, 0px)');
+    expect(opacityOf('vor-to')).toBe('1');
+    expect(opacityOf('vor-from')).toBe('0');
+    expect(screen.getByTestId('vor-course').textContent).toBe('CRS 090');
+    expect(document.querySelector('title')!.textContent).toBe('VOR indicator: course 090°, needle 4.0° left, TO');
+  });
+
+  it('lets explicit deviation and toFrom override the computed values and clamps to full scale', () => {
+    render(<VorIndicator course={0} radial={0} deviation={25} toFrom="FROM" />);
+    expect(transformOf('vor-needle')).toBe('translate(110px, 0px)');
+    expect(opacityOf('vor-from')).toBe('1');
+    expect(opacityOf('vor-to')).toBe('0');
+  });
+
+  it('shows the NAV flag and centres the needle without a signal, and survives NaN', () => {
+    const { rerender } = render(<VorIndicator course={45} radial={45} signal={false} />);
+    expect(opacityOf('vor-nav-flag')).toBe('1');
+    expect(opacityOf('vor-from')).toBe('0');
+    expect(transformOf('vor-needle')).toBe('translate(0px, 0px)');
+    expect(document.querySelector('title')!.textContent).toBe('VOR indicator: course 045°, no signal');
+    rerender(<VorIndicator course={NaN} radial={NaN} deviation={NaN} />);
+    expect(opacityOf('vor-nav-flag')).toBe('0');
+    expect(transformOf('vor-card')).toBe('rotate(0deg)');
+    expect(screen.getByTestId('vor-course').textContent).toBe('CRS 360');
   });
 });
