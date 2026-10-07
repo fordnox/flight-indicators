@@ -5,6 +5,7 @@ import {
   Altimeter,
   AttitudeIndicator,
   DataPanel,
+  FuelIndicator,
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
@@ -12,7 +13,7 @@ import {
   WindIndicator,
 } from '../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat' | 'fuelL' | 'fuelR';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -23,6 +24,8 @@ const RANGES: Record<Key, [number, number, number]> = {
   altitude: [-1000, 30000, 10],
   qnh: [950, 1050, 1],
   oat: [-40, 50, 1],
+  fuelL: [0, 100, 0.5],
+  fuelR: [0, 100, 0.5],
   vs: [-2000, 2000, 50],
   turn: [-6, 6, 0.1],
   slip: [-1, 1, 0.05],
@@ -51,6 +54,11 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
   },
   { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
   {
+    title: 'Fuel',
+    keys: ['fuelL', 'fuelR'],
+    render: (s) => <FuelIndicator size={SIZE} capacity={100} tanks={[{ name: 'Left', quantity: s.fuelL }, { name: 'Right', quantity: s.fuelR }]} />,
+  },
+  {
     title: 'Data panel',
     keys: ['oat', 'qnh'],
     render: (s) => (
@@ -73,7 +81,7 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State) => ReactNod
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100 });
   const [simulate, setSimulate] = useState(true);
   const [showControls, setShowControls] = useState(true);
 

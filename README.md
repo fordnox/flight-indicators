@@ -4,7 +4,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Nine instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway** and a custom **Data panel** for any readouts you like
+- Ten instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -32,6 +32,7 @@ import {
   TurnCoordinator,
   VorIndicator,
   WindIndicator,
+  FuelIndicator,
   DataPanel,
 } from 'flight-indicators';
 
@@ -46,6 +47,7 @@ export function Panel({ data }) {
       <VerticalSpeed verticalSpeed={data.vs} />
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
+      <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
       <DataPanel
         heading="Radios"
         fields={[
@@ -146,6 +148,19 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 | `signal`    | `boolean`                | `true`  | `false` shows the red NAV flag, centres the needle and hides TO/FROM. |
 
 `vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
+
+### `<FuelIndicator />`
+
+A digital fuel quantity gauge: one vertical bar graph per tank with a numeric readout underneath, `FULL` when a tank is at capacity, and red when it drops to the low threshold.
+
+| Prop       | Type         | Default   | Description                                                         |
+| ---------- | ------------ | --------- | ------------------------------------------------------------------- |
+| `tanks`    | `FuelTank[]` | Left and Right, empty | Tanks shown left to right, each `{ name, quantity, capacity? }`. Up to four. |
+| `capacity` | `number`     | `50`      | Full-tank quantity for tanks that don't set their own.             |
+| `unit`     | `string`     | `"gal"`   | Unit printed under each readout.                                   |
+| `low`      | `number`     | 10% of capacity | Quantity at or below which a tank turns red.                 |
+| `decimals` | `number`     | `1`       | Decimal places in the readouts.                                    |
+| `label`    | `string`     | `"FUEL"`  | Caption along the bottom of the display.                           |
 
 ### `<DataPanel />`
 

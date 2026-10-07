@@ -5,6 +5,7 @@ import {
   Altimeter,
   AttitudeIndicator,
   DataPanel,
+  FuelIndicator,
   HeadingIndicator,
   TurnCoordinator,
   VerticalSpeed,
@@ -26,6 +27,7 @@ describe('rendering', () => {
     ['wind', <WindIndicator />],
     ['vor', <VorIndicator />],
     ['data', <DataPanel />],
+    ['fuel', <FuelIndicator />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -262,5 +264,35 @@ describe('DataPanel', () => {
     rerender(<DataPanel />);
     expect(screen.queryAllByTestId(/^data-field-/)).toHaveLength(0);
     expect(document.querySelector('title')!.textContent).toBe('Data panel: no data');
+  });
+});
+
+describe('FuelIndicator', () => {
+  const value = (i: number) => screen.getByTestId(`fuel-value-${i}`);
+
+  it('scales each bar by its fraction, shows FULL at capacity and flags a low tank', () => {
+    const { container } = render(
+      <FuelIndicator capacity={100} tanks={[{ name: 'Left', quantity: 88.7 }, { name: 'Right', quantity: 100 }, { name: 'Aux', quantity: 4, capacity: 20 }]} />,
+    );
+    expect(transformOf('fuel-bar-0')).toBe('scaleY(0.887)');
+    expect(transformOf('fuel-bar-1')).toBe('scaleY(1)');
+    expect(transformOf('fuel-bar-2')).toBe('scaleY(0.2)');
+    expect(value(0).textContent).toBe('88.7');
+    expect(value(1).textContent).toBe('FULL');
+    expect(value(2).textContent).toBe('4.0');
+    expect(value(0).getAttribute('fill')).toBe('#fff');
+    expect(container.querySelector('title')!.textContent).toBe('FUEL: Left 88.7 of 100.0 gal, Right full, Aux 4.0 of 20.0 gal');
+    expect(screen.getAllByTestId(/^fuel-tank-/)).toHaveLength(3);
+  });
+
+  it('turns red at the low threshold, clamps and survives NaN', () => {
+    const { rerender } = render(<FuelIndicator capacity={50} low={8} unit="L" decimals={0} tanks={[{ name: 'L', quantity: 8 }, { name: 'R', quantity: 80 }]} />);
+    expect(value(0).getAttribute('fill')).toBe('#ff3b3b');
+    expect(value(0).textContent).toBe('8');
+    expect(transformOf('fuel-bar-1')).toBe('scaleY(1)');
+    expect(document.querySelector('title')!.textContent).toContain('L 8 of 50 L (low)');
+    rerender(<FuelIndicator tanks={[{ name: 'L', quantity: NaN }]} />);
+    expect(transformOf('fuel-bar-0')).toBe('scaleY(0)');
+    expect(value(0).textContent).toBe('0.0');
   });
 });
