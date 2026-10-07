@@ -20,4 +20,5 @@ export {
   type EngineBarGauge,
 } from './components/EngineIndicator';
 export { FlapIndicator, type FlapIndicatorProps, type FlapSpeedLimit } from './components/FlapIndicator';
+export { AoaIndicator, type AoaIndicatorProps } from './components/AoaIndicator';
 export type { InstrumentProps } from './components/Instrument';
