@@ -24,8 +24,7 @@ export interface FlapIndicatorProps extends InstrumentProps {
   speedLimits?: FlapSpeedLimit[];
   /** Current airspeed in knots. When above the limit for the current flap setting the readout turns red. */
   airspeed?: number;
-  /** Also print the limit in mph. Default `true`. */
-  showMph?: boolean;
+
   /** Caption at the bottom of the dial. Default `"WING FLAP"`. */
   label?: string;
 }
@@ -34,7 +33,7 @@ const GREEN = '#3ddc3d';
 const YELLOW = '#ffd400';
 const ORANGE = '#ff8a00';
 const RED = '#ff2a2a';
-const KT_TO_MPH = 1.150779;
+
 
 /** Bar geometry: 0° at the top, `max` at the bottom. */
 const BAR_X = 226;
@@ -58,7 +57,6 @@ export function FlapIndicator({
   segments = 20,
   speedLimits,
   airspeed,
-  showMph = true,
   label = 'WING FLAP',
   ...props
 }: FlapIndicatorProps) {
@@ -126,29 +124,19 @@ export function FlapIndicator({
       {/* Max speed for the current setting. */}
       {limit && (
         <g textAnchor="middle" dominantBaseline="central" fill={overspeed ? RED : '#fff'}>
-          <text data-testid="flap-speed" x={118} y={166} fontSize="36" fontWeight="bold">
+          <text data-testid="flap-speed" x={118} y={176} fontSize="36" fontWeight="bold">
             {Math.round(limit.speed)}
             <tspan fontSize="13" dx="3">
               KTS
             </tspan>
           </text>
-          {showMph && (
-            <text x={118} y={196} fontSize="22" fontWeight="bold">
-              {Math.round(limit.speed * KT_TO_MPH)}
-              <tspan fontSize="11" dx="3">
-                MPH
-              </tspan>
-            </text>
-          )}
-          <text x={118} y={222} fontSize="13" fontWeight="bold" fill="#bbb" letterSpacing="2">
+          <text x={118} y={212} fontSize="13" fontWeight="bold" fill="#bbb" letterSpacing="2">
             MAX
           </text>
         </g>
       )}
 
-      <text x={CENTER} y={338} fill="#fff" fontSize="24" fontWeight="bold" fontStyle="italic" letterSpacing="1" textAnchor="middle" dominantBaseline="central">
-        {label}
-      </text>
+      <text x={CENTER} y={345} fill="#ccc" fontSize="16" textAnchor="middle">{label.toUpperCase()}</text>
     </InstrumentFrame>
   );
 }
