@@ -1,6 +1,9 @@
 import { StrictMode, useEffect, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
+  AdfIndicator,
+  RadioPanel,
+  relativeBearing,
   Airspeed,
   Altimeter,
   AoaIndicator,
@@ -16,7 +19,7 @@ import {
   WindIndicator,
 } from '../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -48,6 +51,8 @@ const RANGES: Record<Key, [number, number, number]> = {
   gust: [0, 50, 1],
   course: [0, 359, 1],
   radial: [0, 359, 1],
+  ndb: [0, 359, 1],
+  dme: [0, 120, 0.1],
 };
 
 const SIZE = 240;
@@ -146,6 +151,16 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
     ),
   },
   { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
+  {
+    title: 'ADF',
+    keys: ['heading', 'ndb'],
+    render: (s) => <AdfIndicator size={SIZE} heading={s.heading} bearing={relativeBearing(s.heading, s.ndb)} />,
+  },
+  {
+    title: 'Radio',
+    keys: ['dme'],
+    render: (s) => <RadioPanel size={SIZE} nav={{ active: 116.8, standby: 110.5 }} adf={{ active: 250, standby: 362.5 }} dme={s.dme} />,
+  },
   {
     title: 'Fuel',
     keys: ['fuelL', 'fuelR'],
@@ -263,7 +278,7 @@ function NpmIcon() {
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(false);
@@ -286,6 +301,8 @@ function App() {
         windSpeed: 12 + 6 * Math.sin(t / 5),
         gust: 22 + 4 * Math.sin(t / 3),
         radial: norm(270 + 8 * Math.sin(t / 6)),
+        ndb: norm(40 + 25 * Math.sin(t / 11)),
+        dme: 18 + 12 * Math.sin(t / 13),
         oat: 15 - 2 * (prev.altitude / 1000),
         rpm: 2300 + 150 * Math.sin(t / 4),
         man: 24 + 3 * Math.sin(t / 4),

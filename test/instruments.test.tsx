@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import {
+  AdfIndicator,
   Airspeed,
   Altimeter,
   AoaIndicator,
@@ -10,10 +11,15 @@ import {
   FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
+  RadioPanel,
   TurnCoordinator,
   VerticalSpeed,
   VorIndicator,
   WindIndicator,
+  formatAdf,
+  formatDme,
+  formatNav,
+  relativeBearing,
   vorDeviation,
 } from '../src';
 
@@ -29,6 +35,8 @@ describe('rendering', () => {
     ['turn', <TurnCoordinator />],
     ['wind', <WindIndicator />],
     ['vor', <VorIndicator />],
+    ['adf', <AdfIndicator />],
+    ['radio', <RadioPanel />],
     ['data', <DataPanel />],
     ['fuel', <FuelIndicator />],
     ['engine', <EngineIndicator />],
@@ -233,6 +241,75 @@ describe('VorIndicator', () => {
     expect(opacityOf('vor-nav-flag')).toBe('0');
     expect(transformOf('vor-card')).toBe('rotate(0deg)');
     expect(screen.getByTestId('vor-course').textContent).toBe('CRS 360');
+  });
+});
+
+describe('AdfIndicator', () => {
+  const title = () => document.querySelector('title')!.textContent;
+
+  it('works out the relative bearing from heading and bearing to the station', () => {
+    expect(relativeBearing(90, 135)).toBe(45);
+    expect(relativeBearing(350, 10)).toBe(20);
+    expect(relativeBearing(10, 350)).toBe(340);
+    expect(relativeBearing(NaN, NaN)).toBe(0);
+  });
+
+  it('points the needle at the relative bearing over a fixed card', () => {
+    render(<AdfIndicator bearing={45} />);
+    expect(transformOf('adf-needle')).toBe('rotate(45deg)');
+    expect(transformOf('adf-card')).toBe('rotate(0deg)');
+    expect(title()).toBe('ADF indicator: station 045° relative, bearing 045° to station');
+  });
+
+  it('turns the card to the heading so the needle reads the bearing to the station', () => {
+    render(<AdfIndicator bearing={300} heading={90} />);
+    expect(transformOf('adf-card')).toBe('rotate(-90deg)');
+    expect(transformOf('adf-needle')).toBe('rotate(300deg)');
+    expect(title()).toBe('ADF indicator: station 300° relative, bearing 030° to station');
+  });
+
+  it('takes the shortest way round, parks the needle without a signal and survives NaN', () => {
+    const { rerender } = render(<AdfIndicator bearing={350} />);
+    rerender(<AdfIndicator bearing={10} />);
+    expect(transformOf('adf-needle')).toBe('rotate(370deg)');
+    rerender(<AdfIndicator bearing={10} signal={false} />);
+    expect(screen.getByTestId('adf-flag').getAttribute('opacity')).toBe('1');
+    expect(title()).toBe('ADF indicator: no signal');
+    rerender(<AdfIndicator bearing={NaN} heading={NaN} />);
+    expect(screen.getByTestId('adf-flag').getAttribute('opacity')).toBe('0');
+    expect(title()).toBe('ADF indicator: station 000° relative, bearing 000° to station');
+  });
+});
+
+describe('RadioPanel', () => {
+  const text = (id: string) => screen.getByTestId(id).textContent;
+
+  it('formats frequencies and distance', () => {
+    expect(formatNav(116.8)).toBe('116.80');
+    expect(formatNav()).toBe('---.--');
+    expect(formatAdf(250)).toBe('250');
+    expect(formatAdf(362.5)).toBe('362.5');
+    expect(formatAdf(NaN)).toBe('---');
+    expect(formatDme(12.34)).toBe('12.3');
+    expect(formatDme(99.96)).toBe('100');
+    expect(formatDme(-1)).toBe('--.-');
+  });
+
+  it('shows active and standby frequencies and the DME distance', () => {
+    render(<RadioPanel nav={{ active: 116.8, standby: 110.5 }} adf={{ active: 250 }} dme={8.42} />);
+    expect(text('radio-nav-active')).toBe('116.80');
+    expect(text('radio-nav-standby')).toBe('110.50');
+    expect(text('radio-adf-active')).toBe('250');
+    expect(text('radio-adf-standby')).toBe('---');
+    expect(text('radio-dme')).toBe('8.4');
+    expect(document.querySelector('title')!.textContent).toBe('Radio panel: NAV 116.80 MHz, ADF 250 kHz, DME 8.4 NM');
+  });
+
+  it('shows dashes when nothing is tuned', () => {
+    render(<RadioPanel />);
+    expect(text('radio-nav-active')).toBe('---.--');
+    expect(text('radio-dme')).toBe('--.-');
+    expect(document.querySelector('title')!.textContent).toBe('Radio panel: NAV not tuned, ADF not tuned, DME no distance');
   });
 });
 

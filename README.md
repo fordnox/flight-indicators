@@ -8,7 +8,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Thirteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Fifteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -35,6 +35,9 @@ import {
   VerticalSpeed,
   TurnCoordinator,
   VorIndicator,
+  AdfIndicator,
+  RadioPanel,
+  relativeBearing,
   WindIndicator,
   FuelIndicator,
   FlapIndicator,
@@ -54,6 +57,8 @@ export function Panel({ data }) {
       <VerticalSpeed verticalSpeed={data.vs} />
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
+      <AdfIndicator heading={data.heading} bearing={relativeBearing(data.heading, data.ndbBearing)} />
+      <RadioPanel nav={{ active: data.nav1, standby: data.nav1Stby }} adf={{ active: data.adf }} dme={data.dme} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
       <FlapIndicator flaps={data.flaps} airspeed={data.ias} speedLimits={[{ flaps: 0, speed: 160 }, { flaps: 10, speed: 110 }]} />
       <EngineIndicator manifold={{ value: data.map }} rpm={{ value: data.rpm }} cht={data.cht} egt={data.egt} fuelLeft={data.fuelL} fuelRight={data.fuelR} />
@@ -157,6 +162,31 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 | `signal`    | `boolean`                | `true`  | `false` shows the red NAV flag, centres the needle and hides TO/FROM. |
 
 `vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
+
+### `<AdfIndicator />`
+
+An automatic direction finder. The needle points at the tuned NDB: give it the `bearing` of the station relative to the nose. With `heading` left at `0` it is a fixed-card ADF that reads relative bearing. Pass the aircraft `heading` and the card turns with it (a rotatable-card ADF or RMI), so the needle head reads the magnetic bearing to the station and the tail the bearing from it.
+
+| Prop      | Type      | Default | Description                                                        |
+| --------- | --------- | ------- | ------------------------------------------------------------------ |
+| `bearing` | `number`  | `0`     | Relative bearing to the station in degrees, clockwise from the nose. |
+| `heading` | `number`  | `0`     | Heading set on the compass card. `0` gives a fixed card.            |
+| `signal`  | `boolean` | `true`  | `false` parks the needle at 90° and shows the red ADF flag.         |
+
+`relativeBearing(heading, bearingToStation)` is exported too, for when your data gives the magnetic bearing to the station rather than the relative one.
+
+### `<RadioPanel />`
+
+A navigation radio stack: NAV and ADF receivers, each with an active and a standby frequency, and a DME distance readout. Anything you leave out shows as dashes.
+
+| Prop    | Type                                    | Default | Description                                             |
+| ------- | --------------------------------------- | ------- | ------------------------------------------------------- |
+| `nav`   | `{ active?: number; standby?: number }` |         | NAV (VOR/LOC) frequencies in MHz, shown with two decimals. |
+| `adf`   | `{ active?: number; standby?: number }` |         | ADF frequencies in kHz.                                  |
+| `dme`   | `number`                                |         | DME distance in nautical miles.                          |
+| `color` | `string`                                | amber   | Colour of the digits.                                    |
+
+`formatNav`, `formatAdf` and `formatDme` are exported if you want the same number formatting elsewhere.
 
 ### `<FuelIndicator />`
 
