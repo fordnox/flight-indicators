@@ -18,7 +18,7 @@ import {
   VerticalSpeed,
   VorIndicator,
   WindIndicator,
-} from '../src';
+} from '../../src';
 
 type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
 type State = Record<Key, number>;

@@ -303,6 +303,13 @@ Each `DataField`:
 | `decimals` | `number`           | `0`     | Decimal places for numeric values.                              |
 | `color`    | `string`           | white   | Colour of the value text, e.g. amber for a caution.             |
 
+## Examples
+
+Examples live under [`examples/`](examples), one folder each:
+
+- [`examples/instruments`](examples/instruments): the gallery behind the live demo, with every instrument on simulated flight data and sliders to drive each one by hand.
+- [IFR trainer](https://github.com/fordnox/ifr-trainer) (separate repository): a radio navigation simulator built with this library.
+
 ## Development
 
 ```bash

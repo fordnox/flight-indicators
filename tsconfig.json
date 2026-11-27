@@ -15,5 +15,5 @@
     "declaration": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src", "test", "example"]
+  "include": ["src", "test", "examples"]
 }
