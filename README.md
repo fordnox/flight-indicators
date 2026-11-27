@@ -9,6 +9,7 @@
 Modern SVG flight instruments for React, with no runtime dependencies.
 
 - Fifteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -187,6 +188,34 @@ A navigation radio stack: NAV and ADF receivers, each with an active and a stand
 | `color` | `string`                                | amber   | Colour of the digits.                                    |
 
 `formatNav`, `formatAdf` and `formatDme` are exported if you want the same number formatting elsewhere.
+
+### `<RadioStack />`
+
+An interactive radio, for when the user tunes the frequencies themselves. Unlike the instruments it is an HTML control rather than an SVG dial: a faceplate with NAV and ADF receivers, each with an active display, an editable standby display and a transfer button, plus a DME readout. Type a frequency in a STBY box and press Enter to tune it (the old active frequency drops to standby), or leave the box to keep it in standby and press ⇄ later. Text that is not a tunable frequency (NAV 108.00–117.95 MHz, ADF 190–1750 kHz) is rejected.
+
+```tsx
+const [nav, setNav] = useState({ active: 113.4 });
+const [adf, setAdf] = useState({});
+
+<RadioStack nav={nav} adf={adf} onNavChange={setNav} onAdfChange={setAdf} navIdent="KNA" dme={12.4} />
+```
+
+| Prop           | Type                                    | Default         | Description                                                    |
+| -------------- | --------------------------------------- | --------------- | -------------------------------------------------------------- |
+| `nav`          | `{ active?: number; standby?: number }` |                 | NAV frequencies in MHz. Pass it to control the component.       |
+| `adf`          | `{ active?: number; standby?: number }` |                 | ADF frequencies in kHz. Pass it to control the component.       |
+| `defaultNav`   | `{ active?: number; standby?: number }` |                 | Starting NAV frequencies when `nav` is left out and the component keeps its own state. |
+| `defaultAdf`   | `{ active?: number; standby?: number }` |                 | Starting ADF frequencies when `adf` is left out.                |
+| `onNavChange`  | `(next) => void`                        |                 | Called when the NAV standby is entered or the frequencies are swapped. |
+| `onAdfChange`  | `(next) => void`                        |                 | Called when the ADF standby is entered or the frequencies are swapped. |
+| `navIdent`     | `string`                                |                 | Identifier of the station being received, shown under the NAV label. |
+| `adfIdent`     | `string`                                |                 | Identifier of the station being received, shown under the ADF label. |
+| `dme`          | `number`                                |                 | DME distance in nautical miles.                                 |
+| `color`        | `string`                                | amber           | Colour of the digits.                                           |
+| `width`        | `number \| string`                      | `320`           | Rendered width in pixels or any CSS length. Everything scales with it. |
+| `title`        | `string`                                | `"Radio panel"` | Accessible name of the group.                                   |
+
+It also takes `className` and `style`, but not the other [common props](#common-props). `parseNav` and `parseAdf` are exported for validating frequencies yourself.
 
 ### `<FuelIndicator />`
 

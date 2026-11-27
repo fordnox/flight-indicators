@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import {
   AdfIndicator,
@@ -12,6 +12,7 @@ import {
   FuelIndicator,
   HeadingIndicator,
   RadioPanel,
+  RadioStack,
   TurnCoordinator,
   VerticalSpeed,
   VorIndicator,
@@ -19,6 +20,8 @@ import {
   formatAdf,
   formatDme,
   formatNav,
+  parseAdf,
+  parseNav,
   relativeBearing,
   vorDeviation,
 } from '../src';
@@ -310,6 +313,70 @@ describe('RadioPanel', () => {
     expect(text('radio-nav-active')).toBe('---.--');
     expect(text('radio-dme')).toBe('--.-');
     expect(document.querySelector('title')!.textContent).toBe('Radio panel: NAV not tuned, ADF not tuned, DME no distance');
+  });
+});
+
+describe('RadioStack', () => {
+  const text = (id: string) => screen.getByTestId(id).textContent;
+  const standby = (key: string) => screen.getByTestId(`radio-stack-${key}-standby`) as HTMLInputElement;
+  const type = (key: string, value: string) => {
+    fireEvent.focus(standby(key));
+    fireEvent.change(standby(key), { target: { value } });
+  };
+
+  it('parses only frequencies the receivers can tune', () => {
+    expect(parseNav('113.4')).toBe(113.4);
+    expect(parseNav('113,85')).toBe(113.85);
+    expect(parseNav('345')).toBeUndefined();
+    expect(parseNav('abc')).toBeUndefined();
+    expect(parseAdf('345')).toBe(345);
+    expect(parseAdf('362.5')).toBe(362.5);
+    expect(parseAdf('113.4')).toBeUndefined();
+  });
+
+  it('is an HTML group, not an svg, showing frequencies, idents and DME', () => {
+    const { container } = render(<RadioStack nav={{ active: 116.8, standby: 110.5 }} adf={{ active: 250 }} navIdent="KLO" dme={8.42} />);
+    expect(container.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Radio panel');
+    expect(container.querySelector('svg[role="img"]')).toBeNull();
+    expect(text('radio-stack-nav-active')).toBe('116.80');
+    expect(standby('nav').value).toBe('110.50');
+    expect(text('radio-stack-adf-active')).toBe('250');
+    expect(standby('adf').value).toBe('');
+    expect(text('radio-stack-nav-ident')).toBe('KLO');
+    expect(text('radio-stack-dme')).toBe('8.4');
+  });
+
+  it('reports a typed standby frequency on blur and swaps with the button', () => {
+    const onNavChange = vi.fn();
+    render(<RadioStack nav={{ active: 116.8 }} onNavChange={onNavChange} />);
+    type('nav', '113.4');
+    fireEvent.blur(standby('nav'));
+    expect(onNavChange).toHaveBeenLastCalledWith({ active: 116.8, standby: 113.4 });
+    fireEvent.click(screen.getByLabelText('Swap NAV active and standby'));
+    // Controlled: the parent did not apply the standby, so the swap moves the active frequency down.
+    expect(onNavChange).toHaveBeenLastCalledWith({ active: undefined, standby: 116.8 });
+  });
+
+  it('keeps its own state when uncontrolled: Enter tunes the typed frequency', () => {
+    const onAdfChange = vi.fn();
+    render(<RadioStack defaultAdf={{ active: 250 }} onAdfChange={onAdfChange} />);
+    type('adf', '345');
+    fireEvent.keyDown(standby('adf'), { key: 'Enter' });
+    expect(onAdfChange).toHaveBeenLastCalledWith({ active: 345, standby: 250 });
+    expect(text('radio-stack-adf-active')).toBe('345');
+    expect(standby('adf').value).toBe('250');
+  });
+
+  it('rejects text that is not a frequency', () => {
+    const onNavChange = vi.fn();
+    render(<RadioStack defaultNav={{ active: 116.8, standby: 110.5 }} onNavChange={onNavChange} />);
+    type('nav', '999');
+    fireEvent.keyDown(standby('nav'), { key: 'Enter' });
+    expect(standby('nav').getAttribute('aria-invalid')).toBe('true');
+    fireEvent.blur(standby('nav'));
+    expect(onNavChange).not.toHaveBeenCalled();
+    expect(standby('nav').value).toBe('110.50');
+    expect(text('radio-stack-nav-active')).toBe('116.80');
   });
 });
 

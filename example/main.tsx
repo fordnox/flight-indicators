@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import {
   AdfIndicator,
   RadioPanel,
+  RadioStack,
   relativeBearing,
   Airspeed,
   Altimeter,
@@ -160,6 +161,11 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
     title: 'Radio',
     keys: ['dme'],
     render: (s) => <RadioPanel size={SIZE} nav={{ active: 116.8, standby: 110.5 }} adf={{ active: 250, standby: 362.5 }} dme={s.dme} />,
+  },
+  {
+    title: 'Radio stack (interactive)',
+    keys: ['dme'],
+    render: (s) => <RadioStack width="100%" style={{ maxWidth: 300, margin: 'auto 0' }} defaultNav={{ active: 116.8, standby: 110.5 }} defaultAdf={{ active: 250, standby: 362.5 }} navIdent="KLO" dme={s.dme} />,
   },
   {
     title: 'Fuel',
