@@ -21,9 +21,19 @@ import {
   VerticalSpeed,
   VorIndicator,
   WindIndicator,
+  AnnunciatorPanel,
+  EgtFuelFlowGauge,
+  FuelQuantityGauge,
+  HobbsMeter,
+  MagneticCompass,
+  ManifoldFuelFlowGauge,
+  OilGauge,
+  Tachometer,
+  TrimIndicator,
+  VacuumAmmeterGauge,
 } from '../../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'hdgBug' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa' | 'volts';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'hdgBug' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa' | 'volts' | 'trim' | 'vac' | 'amps' | 'hobbs';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -47,6 +57,10 @@ const RANGES: Record<Key, [number, number, number]> = {
   flaps: [0, 40, 1],
   aoa: [-2, 22, 0.1],
   volts: [20, 33, 0.1],
+  trim: [-1, 1, 0.01],
+  vac: [3, 7, 0.1],
+  amps: [-60, 60, 1],
+  hobbs: [0, 9999, 0.1],
   vs: [-2000, 2000, 50],
   turn: [-6, 6, 0.1],
   slip: [-1, 1, 0.05],
@@ -217,6 +231,51 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
       />
     ),
   },
+  { title: 'Tachometer', keys: ['rpm', 'hobbs'], render: (s) => <Tachometer size={SIZE} rpm={s.rpm} hours={s.hobbs} /> },
+  { title: 'Manifold pressure / fuel flow', keys: ['man', 'fuelF'], render: (s) => <ManifoldFuelFlowGauge size={SIZE} manifold={s.man} fuelFlow={s.fuelF} /> },
+  {
+    title: 'Fuel quantity (analog)',
+    keys: ['fuelL', 'fuelR'],
+    // The demo tanks are in percent; the 182T holds 44 gal a side.
+    render: (s) => <FuelQuantityGauge size={SIZE} leftQuantity={s.fuelL * 0.44} rightQuantity={s.fuelR * 0.44} />,
+  },
+  {
+    title: 'Oil temperature / pressure',
+    keys: ['oilT', 'oilP'],
+    render: (s, u) => (
+      <OilGauge
+        size={SIZE}
+        temperature={F(s.oilT, u)}
+        pressure={s.oilP}
+        leftScale={u === 'F' ? undefined : { min: F(75, u), max: F(250, u), marks: [40, 80, 120], green: [F(100, u), F(245, u)], high: F(245, u), unit: '°C' }}
+      />
+    ),
+  },
+  { title: 'Vacuum / ammeter', keys: ['vac', 'amps'], render: (s) => <VacuumAmmeterGauge size={SIZE} vacuum={s.vac} amps={s.amps} /> },
+  {
+    title: 'EGT / fuel flow',
+    keys: ['egt', 'fuelF'],
+    render: (s, u) => <EgtFuelFlowGauge size={SIZE} egt={F(s.egt, u)} fuelFlow={s.fuelF} leftScale={{ min: F(1250, u), max: F(1650, u), unit: `°${u}` }} />,
+  },
+  {
+    title: 'Annunciator',
+    keys: ['fuelL', 'fuelR', 'oilP', 'vac', 'volts'],
+    // Lights come on from the other gauges' values: drag a slider below its limit to see one.
+    render: (s) => (
+      <AnnunciatorPanel
+        size="100%"
+        lights={{
+          fuel: s.fuelL < 10 && s.fuelR < 10 ? 'both' : s.fuelL < 10 ? 'left' : s.fuelR < 10 ? 'right' : false,
+          oil: s.oilP < 20,
+          vac: s.vac < 3.5 || s.vac > 6.5,
+          volts: s.volts < 24.5,
+        }}
+      />
+    ),
+  },
+  { title: 'Magnetic compass', keys: ['heading'], render: (s) => <MagneticCompass size={SIZE} heading={s.heading} /> },
+  { title: 'Elevator trim', keys: ['trim'], render: (s) => <TrimIndicator size={SIZE} trim={s.trim} /> },
+  { title: 'Hobbs meter', keys: ['hobbs', 'oilP'], render: (s) => <HobbsMeter size={SIZE} hours={s.hobbs} running={s.oilP > 20} /> },
   {
     title: 'Clock / OAT / volts (interactive)',
     keys: ['oat', 'volts', 'speed'],
@@ -318,7 +377,7 @@ function NpmIcon() {
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, hdgBug: 90, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6, volts: 28.1 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, hdgBug: 90, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6, volts: 28.1, trim: 0.2, vac: 5, amps: 5, hobbs: 1234.5 });
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(false);
@@ -352,6 +411,11 @@ function App() {
         egt: 1350 + 40 * Math.sin(t / 7),
         aoa: 9 + 10 * Math.sin(t / 5),
         volts: 28.1 + 0.2 * Math.sin(t / 6),
+        trim: 0.2 + 0.3 * Math.sin(t / 7),
+        vac: 5 + 0.3 * Math.sin(t / 9),
+        amps: 5 + 3 * Math.sin(t / 5),
+        // One engine hour per minute of demo, so the tenths drum visibly rolls.
+        hobbs: prev.hobbs + 1 / 240,
       }));
     }, 250);
     return () => clearInterval(id);
