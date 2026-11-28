@@ -658,10 +658,48 @@ describe('IlsIndicator', () => {
     expect(opacityOf('ils-gs-flag')).toBe('1');
   });
 
-  it('draws the OBS knob only with the mounting plate', () => {
-    const { rerender } = render(<IlsIndicator />);
-    expect(screen.queryByTestId('ils-obs')).toBeTruthy();
-    rerender(<IlsIndicator showBox={false} />);
-    expect(screen.queryByTestId('ils-obs')).toBeNull();
+  it('turns the OBS knob with the course', () => {
+    render(<IlsIndicator course={120} />);
+    expect(transformOf('knob-obs-rim')).toBe('rotate(120deg)');
+  });
+});
+
+describe('knobs', () => {
+  it.each([
+    ['obs', <VorIndicator course={30} />],
+    ['obs', <IlsIndicator />],
+    ['baro', <Altimeter />],
+    ['set', <HeadingIndicator />],
+    ['hdg', <AdfIndicator />],
+    ['adjust', <AttitudeIndicator />],
+  ])('draws the %s knob by default and hides it with showKnobs={false}', (id, el) => {
+    const { rerender } = render(el);
+    expect(screen.getByTestId(`knob-${id}`)).toBeTruthy();
+    rerender(<>{{ ...el, props: { ...el.props, showKnobs: false } }}</>);
+    expect(screen.queryByTestId(`knob-${id}`)).toBeNull();
+  });
+
+  it('keeps knobs when the mounting plate is hidden', () => {
+    render(<VorIndicator showBox={false} />);
+    expect(screen.getByTestId('knob-obs')).toBeTruthy();
+  });
+
+  it('turns the knobs with the value they set', () => {
+    render(
+      <>
+        <VorIndicator course={45} />
+        <Altimeter pressure={1023} />
+        <Altimeter pressure={29.82} pressureUnit="inHg" />
+      </>,
+    );
+    expect(transformOf('knob-obs-rim')).toBe('rotate(45deg)');
+    const baro = screen.getAllByTestId('knob-baro-rim').map((n) => (n as unknown as SVGElement).style.transform);
+    expect(baro[0]).toBe('rotate(100deg)');
+    expect(baro[1]).toBe('rotate(-30deg)');
+  });
+
+  it('draws no knob on instruments that have none', () => {
+    const { container } = render(<Airspeed />);
+    expect(container.querySelector('[data-testid^="knob-"]')).toBeNull();
   });
 });

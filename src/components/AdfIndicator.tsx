@@ -44,7 +44,7 @@ export function AdfIndicator({ bearing = 0, heading = 0, signal = true, ...props
     : 'ADF indicator: no signal';
 
   return (
-    <InstrumentFrame {...props} label={label}>
+    <InstrumentFrame {...props} label={label} knobs={[{ id: 'hdg', label: 'HDG', position: 'bottom-left', angle: hdg }]}>
       {/* Compass card: fixed with 0 at the top, or turned to the aircraft heading. */}
       <g data-testid="adf-card" style={motionStyle(`rotate(${-displayCard}deg)`, duration)}>
         <g stroke="#fff" strokeLinecap="round">

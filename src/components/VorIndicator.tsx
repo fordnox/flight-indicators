@@ -98,7 +98,7 @@ export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = t
     : `VOR indicator: course ${courseText}°, no signal`;
 
   return (
-    <InstrumentFrame {...props} label={label}>
+    <InstrumentFrame {...props} label={label} knobs={[{ id: 'obs', label: 'OBS', position: 'bottom-left', angle: crs }]}>
       {/* Rotating compass card, turned by the OBS so the selected course is at the top. */}
       <g data-testid="vor-card" style={motionStyle(`rotate(${-displayCourse}deg)`, duration)}>
         <g stroke="#fff" strokeLinecap="round">

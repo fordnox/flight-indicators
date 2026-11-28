@@ -34,6 +34,8 @@ export function AttitudeIndicator({ roll = 0, pitch = 0, pitchLimit = 40, ...pro
     <InstrumentFrame
       {...props}
       label={`Attitude indicator: pitch ${Math.round(safePitch)}°, roll ${Math.round(safeRoll)}°`}
+      // Small adjustment knob under the dial for setting the miniature aircraft.
+      knobs={[{ id: 'adjust', position: 'bottom' }]}
     >
       <defs>
         <clipPath id={clipId}>

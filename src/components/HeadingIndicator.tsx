@@ -15,7 +15,12 @@ export function HeadingIndicator({ heading = 0, ...props }: HeadingIndicatorProp
   const displayHeading = useContinuousAngle(safeHeading);
 
   return (
-    <InstrumentFrame {...props} label={`Heading indicator: ${String(normalised).padStart(3, '0')}°`}>
+    <InstrumentFrame
+      {...props}
+      label={`Heading indicator: ${String(normalised).padStart(3, '0')}°`}
+      // Push-to-set knob for aligning the gyro with the compass.
+      knobs={[{ id: 'set', label: 'PUSH', position: 'bottom-left', angle: safeHeading }]}
+    >
       {/* Rotating compass card. */}
       <g data-testid="heading-card" style={motionStyle(`rotate(${-displayHeading}deg)`, duration)}>
         <g stroke="#fff" strokeLinecap="round">

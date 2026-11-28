@@ -21,7 +21,12 @@ export function Altimeter({ altitude = 0, pressure, pressureUnit = 'hPa', ...pro
   const qnhText = pressureUnit === 'inHg' ? qnh.toFixed(2) : Math.round(qnh).toString();
 
   return (
-    <InstrumentFrame {...props} label={`Altimeter: ${Math.round(alt)} feet, ${qnhText} ${pressureUnit}`}>
+    <InstrumentFrame
+      {...props}
+      label={`Altimeter: ${Math.round(alt)} feet, ${qnhText} ${pressureUnit}`}
+      // Baro (Kollsman) knob: turns with the pressure setting.
+      knobs={[{ id: 'baro', label: 'BARO', position: 'bottom-left', angle: Math.round((qnh - STANDARD[pressureUnit]) * (pressureUnit === 'inHg' ? 30000 : 1000)) / 100 }]}
+    >
       <g stroke="#fff" strokeLinecap="round">
         {range(0, 49, 1).map((i) => (
           <path key={i} d={tickPath(178, i % 5 === 0 ? 150 : 164, i * 7.2)} strokeWidth={i % 5 === 0 ? 4 : 2} />
