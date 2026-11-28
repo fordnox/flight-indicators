@@ -10,11 +10,12 @@ export default defineConfig({
   build: {
     outDir: '../../demo-dist',
     emptyOutDir: true,
-    // Gallery plus the VOR / ILS page.
+    // Gallery plus the VOR / ILS page and the Cessna 182T panel.
     rollupOptions: {
       input: {
         main: 'examples/instruments/index.html',
         navigation: 'examples/instruments/navigation.html',
+        panel182: 'examples/instruments/panel182.html',
       },
     },
   },

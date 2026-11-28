@@ -50,3 +50,39 @@ button[aria-pressed='true'] { background: #2d4a66; border-color: #6cb6ff; }
 .scenario p { margin: 0; font-size: 13px; color: #9fb3c8; text-align: center; line-height: 1.4; }
 .scenario pre { margin: 0; width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; background: #12161b; font-size: 11.5px; color: #c9d7e3; white-space: pre-wrap; word-break: break-word; }
 .gallery-link { display: inline-block; margin-top: 4px; }
+
+/* Cessna 182T panel page */
+.c182-page { max-width: 1240px; }
+.c182-page h1 { margin: 8px 0 4px; }
+.c182 { position: relative; margin-top: 8px; overflow-x: auto; padding-bottom: 8px; }
+.c182-inner { min-width: 960px; }
+.c182-compass { width: 120px; min-width: 0; margin: 0 auto -6px; position: relative; z-index: 1; padding: 6px 6px 0; border-radius: 40px 40px 8px 8px; background: #111; box-sizing: border-box; }
+.c182-compass svg { display: block; }
+.c182-glareshield { display: flex; justify-content: center; padding: 10px 0 14px; border-radius: 60px 60px 0 0; background: linear-gradient(#262626, #0d0d0d); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5); position: relative; z-index: 1; }
+.c182-annunciator { width: 260px; }
+.c182-panel {
+  display: grid;
+  grid-template-columns: 0.62fr 0.62fr 1fr 1fr 1fr 1fr 1.35fr 0.75fr;
+  grid-template-areas:
+    '. clock asi ai alt nav2 stack hobbs'
+    'fuel egt tc hsi vsi adf stack .'
+    'oil vac map yoke tach . stack .';
+  gap: 10px 12px;
+  align-items: center;
+  padding: 18px 20px 22px;
+  background: linear-gradient(#77797d, #66686c);
+  border-bottom: 10px solid #2b2b2b;
+  border-radius: 0 0 10px 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.c182-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.c182-slot svg { display: block; width: 100%; height: auto; }
+.c182-slot > svg { border-radius: 50%; background: #1b1b1b; box-shadow: 0 0 0 3px #3d3f42, 0 3px 6px rgba(0, 0, 0, 0.6); }
+.c182-slot[style*='hobbs'] > svg { border-radius: 8px; }
+.c182-placard { font-size: 11px; letter-spacing: 0.12em; color: #c9cdd2; }
+.c182-yoke { justify-self: center; width: 46%; aspect-ratio: 1; border-radius: 14px; background: radial-gradient(circle, #050505 38%, #1f1f1f 40%, #2a2a2a 70%); box-shadow: inset 0 0 0 3px #111; }
+.c182-stack { display: flex; flex-direction: column; gap: 10px; align-self: stretch; padding: 10px; border-radius: 6px; background: #1d1e20; box-shadow: inset 0 0 0 2px #0c0c0c; }
+.c182-stack > svg { width: 70%; height: auto; align-self: center; }
+.c182-pedestal { display: flex; justify-content: center; gap: 16px; width: 360px; min-width: 0; margin: 0 auto; padding: 14px 20px 18px; border-radius: 0 0 40px 40px; background: #161616; }
+.c182-pedestal .c182-slot { width: 150px; }
+.c182-controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; max-width: 520px; margin-top: 16px; }

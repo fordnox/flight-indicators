@@ -430,6 +430,7 @@ function App() {
             <GithubIcon /> GitHub
           </a>
           <a href="./navigation.html">VOR, ILS &amp; HSI examples</a>
+          <a href="./panel182.html">Cessna 182T panel</a>
           <a href={NPM_URL} target="_blank" rel="noreferrer">
             <NpmIcon /> npm
           </a>
