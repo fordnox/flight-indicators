@@ -245,6 +245,21 @@ describe('VorIndicator', () => {
     expect(transformOf('vor-card')).toBe('rotate(0deg)');
     expect(screen.getByTestId('vor-course').textContent).toBe('CRS 360');
   });
+
+  it('swings the needle from a hinge under the top index when needle="swing"', () => {
+    const { rerender } = render(<VorIndicator course={90} radial={266} needle="swing" />);
+    // 4° left = 2 dots left; the lower end swings left, i.e. clockwise about the hinge.
+    expect(transformOf('vor-needle')).toBe('rotate(15deg)');
+    expect((screen.getByTestId('vor-needle') as unknown as SVGElement).style.transformOrigin).toBe('200px 100px');
+    expect(opacityOf('vor-to')).toBe('1');
+    expect(document.querySelector('title')!.textContent).toBe('VOR indicator: course 090°, needle 4.0° left, TO');
+    rerender(<VorIndicator deviation={25} toFrom="FROM" needle="swing" />);
+    expect(transformOf('vor-needle')).toBe('rotate(-37.5deg)');
+    expect(opacityOf('vor-from')).toBe('1');
+    rerender(<VorIndicator deviation={5} needle="swing" signal={false} />);
+    expect(transformOf('vor-needle')).toBe('rotate(0deg)');
+    expect(opacityOf('vor-nav-flag')).toBe('1');
+  });
 });
 
 describe('AdfIndicator', () => {

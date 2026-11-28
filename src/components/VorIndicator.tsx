@@ -2,6 +2,8 @@ import { CENTER, DEFAULT_ANIMATION_MS, clamp, finite, motionStyle, polar, range,
 import { InstrumentFrame, type InstrumentProps } from './Instrument';
 
 export type ToFrom = 'TO' | 'FROM' | 'OFF';
+/** How the course deviation needle moves: sliding sideways, or swinging from a hinge under the top index. */
+export type VorNeedle = 'slide' | 'swing';
 
 export interface VorIndicatorProps extends InstrumentProps {
   /** Selected course (OBS) in degrees. The compass card turns so this course sits under the top index. */
@@ -20,6 +22,12 @@ export interface VorIndicatorProps extends InstrumentProps {
   toFrom?: ToFrom;
   /** `false` shows the red NAV flag, centres the needle and hides TO/FROM. Default `true`. */
   signal?: boolean;
+  /**
+   * `"slide"` (default) moves a vertical bar sideways across a straight row of dots.
+   * `"swing"` hinges the needle just below the top index so it swings like a pendulum over a curved row of dots,
+   * as on older VOR heads.
+   */
+  needle?: VorNeedle;
 }
 
 const CARDINALS: Record<number, string> = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' };
@@ -27,6 +35,12 @@ const AMBER = '#ffb000';
 const FULL_SCALE_DEG = 10;
 const DOT_SPACING = 22;
 const FULL_SCALE_PX = DOT_SPACING * 5;
+/** Swinging needle: hinge point, length, radius of the dot arc and the needle angle per dot. */
+const PIVOT_Y = CENTER - 100;
+const SWING_LENGTH = 165;
+const SWING_DOT_RADIUS = 156;
+const SWING_DEG_PER_DOT = 7.5;
+const SWING_FULL_SCALE_DEG = SWING_DEG_PER_DOT * 5;
 
 const norm = (deg: number): number => ((deg % 360) + 360) % 360;
 /** Signed difference `a - b` wrapped into (-180, 180]. */
@@ -62,7 +76,7 @@ function Flag({ y, up, visible, testId }: { y: number; up: boolean; visible: boo
   );
 }
 
-export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = true, ...props }: VorIndicatorProps) {
+export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = true, needle = 'slide', ...props }: VorIndicatorProps) {
   const duration = props.animationDuration ?? DEFAULT_ANIMATION_MS;
   const crs = finite(course);
   const computed = typeof radial === 'number' && Number.isFinite(radial) ? vorDeviation(crs, radial) : undefined;
@@ -73,7 +87,10 @@ export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = t
 
   const displayCourse = useContinuousAngle(crs);
   const courseText = String(Math.round(norm(crs)) || 360).padStart(3, '0');
+  const swing = needle === 'swing';
   const needleX = (dev / FULL_SCALE_DEG) * FULL_SCALE_PX;
+  // Course to the right swings the needle's lower end to the right, i.e. an anticlockwise turn about the hinge.
+  const needleAngle = -(dev / FULL_SCALE_DEG) * SWING_FULL_SCALE_DEG;
 
   const devText = Math.abs(dev) < 0.05 ? 'centred' : `${Math.abs(dev).toFixed(1)}° ${dev > 0 ? 'right' : 'left'}`;
   const label = signal
@@ -118,22 +135,84 @@ export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = t
         ))}
       </g>
 
-      {/* Deviation scale: 5 dots each side of the centre circle, 2° per dot. */}
-      <g fill="#fff" stroke="#000" strokeWidth="1">
-        {range(1, 5, 1).flatMap((i) => [-i, i]).map((i) => (
-          <circle key={i} cx={CENTER + i * DOT_SPACING} cy={CENTER} r="5" />
-        ))}
-      </g>
-      <circle cx={CENTER} cy={CENTER} r="9" fill="none" stroke="#fff" strokeWidth="2.5" />
+      {swing ? (
+        <>
+          {/* Deviation scale: 5 dots each side on an arc around the hinge, 2° per dot, with a centre mark. */}
+          <g fill="#fff" stroke="#000" strokeWidth="1">
+            {range(1, 5, 1).flatMap((i) => [-i, i]).map((i) => {
+              const [x, y] = polar(SWING_DOT_RADIUS, 180 - i * SWING_DEG_PER_DOT, CENTER, PIVOT_Y);
+              return <circle key={i} cx={x} cy={y} r="5" />;
+            })}
+          </g>
+          <rect
+            x={CENTER - 6}
+            y={PIVOT_Y + SWING_DOT_RADIUS - 10}
+            width="12"
+            height="20"
+            rx="2"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2.5"
+          />
 
-      {/* TO (above) and FROM (below) triangles. */}
-      <Flag y={CENTER - 54} up visible={flag === 'TO'} testId="vor-to" />
-      <Flag y={CENTER + 54} up={false} visible={flag === 'FROM'} testId="vor-from" />
+          {/* TO / FROM window to the right of the needle's travel: one triangle points up (TO) or down (FROM). */}
+          <rect x={CENTER + 46} y={CENTER - 72} width="46" height="76" rx="5" fill="#000" stroke="#555" strokeWidth="2" />
+          <g fill="#ccc" fontSize="14" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
+            <text x={CENTER + 69} y={CENTER - 59}>TO</text>
+            <text x={CENTER + 69} y={CENTER - 9}>FR</text>
+          </g>
+          <g stroke="#000" strokeWidth="1.5" strokeLinejoin="round" fill="#fff">
+            <path
+              data-testid="vor-to"
+              d={`M ${CENTER + 69} ${CENTER - 44} l 11 18 h -22 z`}
+              opacity={flag === 'TO' ? 1 : 0}
+              style={{ transition: 'opacity 200ms ease-out' }}
+            />
+            <path
+              data-testid="vor-from"
+              d={`M ${CENTER + 69} ${CENTER - 22} l 11 -18 h -22 z`}
+              opacity={flag === 'FROM' ? 1 : 0}
+              style={{ transition: 'opacity 200ms ease-out' }}
+            />
+          </g>
 
-      {/* Course deviation needle, moved sideways by the deviation. */}
-      <g data-testid="vor-needle" style={motionStyle(`translate(${needleX}px, 0px)`, duration)}>
-        <rect x={CENTER - 3} y={CENTER - 68} width="6" height="136" rx="3" fill="#fff" stroke="#000" strokeWidth="1.5" />
-      </g>
+          {/* Course deviation needle, hinged under the top index and swung by the deviation. */}
+          <g data-testid="vor-needle" style={motionStyle(`rotate(${needleAngle}deg)`, duration, CENTER, PIVOT_Y)}>
+            <path
+              d={`M ${CENTER} ${PIVOT_Y} V ${PIVOT_Y + SWING_LENGTH}`}
+              stroke="#000"
+              strokeWidth="7"
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${CENTER} ${PIVOT_Y} V ${PIVOT_Y + SWING_LENGTH}`}
+              stroke="#fff"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+          </g>
+          <circle cx={CENTER} cy={PIVOT_Y} r="6" fill="#333" stroke="#fff" strokeWidth="2" />
+        </>
+      ) : (
+        <>
+          {/* Deviation scale: 5 dots each side of the centre circle, 2° per dot. */}
+          <g fill="#fff" stroke="#000" strokeWidth="1">
+            {range(1, 5, 1).flatMap((i) => [-i, i]).map((i) => (
+              <circle key={i} cx={CENTER + i * DOT_SPACING} cy={CENTER} r="5" />
+            ))}
+          </g>
+          <circle cx={CENTER} cy={CENTER} r="9" fill="none" stroke="#fff" strokeWidth="2.5" />
+
+          {/* TO (above) and FROM (below) triangles. */}
+          <Flag y={CENTER - 54} up visible={flag === 'TO'} testId="vor-to" />
+          <Flag y={CENTER + 54} up={false} visible={flag === 'FROM'} testId="vor-from" />
+
+          {/* Course deviation needle, moved sideways by the deviation. */}
+          <g data-testid="vor-needle" style={motionStyle(`translate(${needleX}px, 0px)`, duration)}>
+            <rect x={CENTER - 3} y={CENTER - 68} width="6" height="136" rx="3" fill="#fff" stroke="#000" strokeWidth="1.5" />
+          </g>
+        </>
+      )}
 
       {/* Selected course readout. */}
       <rect x={CENTER - 44} y={CENTER + 72} width="88" height="26" rx="4" fill="#000" stroke="#555" strokeWidth="2" />
@@ -153,7 +232,12 @@ export function VorIndicator({ course = 0, radial, deviation, toFrom, signal = t
       </text>
 
       {/* NAV warning flag, shown when there is no usable signal. */}
-      <g data-testid="vor-nav-flag" opacity={signal ? 0 : 1} style={{ transition: 'opacity 200ms ease-out' }}>
+      <g
+        data-testid="vor-nav-flag"
+        opacity={signal ? 0 : 1}
+        style={{ transition: 'opacity 200ms ease-out' }}
+        transform={swing ? 'translate(-64 52)' : undefined}
+      >
         <rect x={CENTER - 28} y={CENTER - 98} width="56" height="24" rx="3" fill="#d42626" stroke="#000" strokeWidth="1.5" />
         <text x={CENTER} y={CENTER - 85} fill="#fff" fontSize="15" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
           NAV
