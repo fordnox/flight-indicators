@@ -153,6 +153,11 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
   },
   { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
   {
+    title: 'VOR (swinging needle)',
+    keys: ['course', 'radial'],
+    render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} needle="swing" />,
+  },
+  {
     title: 'ADF',
     keys: ['heading', 'ndb'],
     render: (s) => <AdfIndicator size={SIZE} heading={s.heading} bearing={relativeBearing(s.heading, s.ndb)} />,

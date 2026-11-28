@@ -161,6 +161,7 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 | `deviation` | `number`                 |         | Course deviation in degrees, positive when the course is to the right. Clamped to ±10. Overrides `radial`. |
 | `toFrom`    | `"TO" \| "FROM" \| "OFF"` |         | TO/FROM flag. Overrides `radial`. `"OFF"` hides both triangles.    |
 | `signal`    | `boolean`                | `true`  | `false` shows the red NAV flag, centres the needle and hides TO/FROM. |
+| `needle`    | `"slide" \| "swing"`     | `"slide"` | How the needle moves. `"slide"` moves a vertical bar sideways over a straight row of dots. `"swing"` hinges the needle just below the top index so it swings like a pendulum over a curved row of dots, as on older VOR heads, with a TO/FR window on the right. |
 
 `vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
 
