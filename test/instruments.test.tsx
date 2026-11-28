@@ -11,6 +11,7 @@ import {
   FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
+  IlsIndicator,
   RadioPanel,
   RadioStack,
   TurnCoordinator,
@@ -38,6 +39,8 @@ describe('rendering', () => {
     ['turn', <TurnCoordinator />],
     ['wind', <WindIndicator />],
     ['vor', <VorIndicator />],
+    ['ils', <IlsIndicator />],
+    ['ils-swing', <IlsIndicator needles="swing" />],
     ['adf', <AdfIndicator />],
     ['radio', <RadioPanel />],
     ['data', <DataPanel />],
@@ -593,5 +596,72 @@ describe('AoaIndicator', () => {
     expect(lit()).toBe(0);
     expect(screen.getByTestId('aoa-value').textContent).toBe('---');
     expect(document.querySelectorAll('animate').length).toBe(0);
+  });
+});
+
+describe('IlsIndicator', () => {
+  const opacityOf = (id: string) => screen.getByTestId(id).getAttribute('opacity');
+  const title = () => document.querySelector('title')!.textContent;
+
+  it('slides both needles from course, radial and glideslope', () => {
+    render(<IlsIndicator course={90} radial={266} glideslope={0.35} />);
+    expect(transformOf('ils-card')).toBe('rotate(-90deg)');
+    expect(transformOf('ils-loc-needle')).toBe('translate(-36px, 0px)');
+    expect(transformOf('ils-gs-needle')).toBe('translate(0px, -45px)');
+    expect(opacityOf('ils-to')).toBe('1');
+    expect(opacityOf('ils-from')).toBe('0');
+    expect(opacityOf('ils-nav-flag')).toBe('0');
+    expect(opacityOf('ils-gs-flag')).toBe('0');
+    expect(title()).toBe('ILS indicator: course 090°, course needle 4.0° left, glideslope 0.35° up, TO');
+  });
+
+  it('clamps to full scale and honours a localizer full scale', () => {
+    const { rerender } = render(<IlsIndicator deviation={25} toFrom="FROM" glideslope={-3} />);
+    expect(transformOf('ils-loc-needle')).toBe('translate(90px, 0px)');
+    expect(transformOf('ils-gs-needle')).toBe('translate(0px, 90px)');
+    expect(opacityOf('ils-from')).toBe('1');
+    rerender(<IlsIndicator deviation={1.25} fullScale={2.5} glideslope={0.14} />);
+    expect(transformOf('ils-loc-needle')).toBe('translate(45px, 0px)');
+    expect(transformOf('ils-gs-needle')).toBe('translate(0px, -18px)');
+  });
+
+  it('drops the flags and centres the needles without a signal', () => {
+    const { rerender } = render(<IlsIndicator course={45} radial={50} signal={false} />);
+    expect(opacityOf('ils-nav-flag')).toBe('1');
+    expect(opacityOf('ils-gs-flag')).toBe('1');
+    expect(opacityOf('ils-to')).toBe('0');
+    expect(opacityOf('ils-from')).toBe('0');
+    expect(transformOf('ils-loc-needle')).toBe('translate(0px, 0px)');
+    expect(transformOf('ils-gs-needle')).toBe('translate(0px, 0px)');
+    expect(title()).toBe('ILS indicator: course 045°, no NAV signal, glideslope off');
+    rerender(<IlsIndicator course={NaN} radial={NaN} deviation={NaN} glideslope={NaN} />);
+    expect(opacityOf('ils-nav-flag')).toBe('0');
+    expect(opacityOf('ils-gs-flag')).toBe('1');
+    expect(transformOf('ils-card')).toBe('rotate(0deg)');
+    rerender(<IlsIndicator glideslope={0.2} glideslopeSignal={false} />);
+    expect(opacityOf('ils-gs-flag')).toBe('1');
+  });
+
+  it('swings hinged needles so they cross the scales at the matching dot', () => {
+    const { rerender } = render(<IlsIndicator needles="swing" deviation={10} glideslope={0.7} />);
+    const loc = screen.getByTestId('ils-loc-needle') as unknown as SVGElement;
+    const gs = screen.getByTestId('ils-gs-needle') as unknown as SVGElement;
+    // Full scale is 90 px from a hinge 108 px away: atan(90 / 108) = 39.81°.
+    expect(loc.style.transform).toBe('rotate(39.81deg)');
+    expect(loc.style.transformOrigin).toBe('200px 308px');
+    expect(gs.style.transform).toBe('rotate(-39.81deg)');
+    expect(gs.style.transformOrigin).toBe('92px 200px');
+    rerender(<IlsIndicator needles="swing" />);
+    expect(transformOf('ils-loc-needle')).toBe('rotate(0deg)');
+    // No glideslope: the needle is parked above the scale, as on the real instrument.
+    expect(transformOf('ils-gs-needle')).toBe('rotate(-48.01deg)');
+    expect(opacityOf('ils-gs-flag')).toBe('1');
+  });
+
+  it('draws the OBS knob only with the mounting plate', () => {
+    const { rerender } = render(<IlsIndicator />);
+    expect(screen.queryByTestId('ils-obs')).toBeTruthy();
+    rerender(<IlsIndicator showBox={false} />);
+    expect(screen.queryByTestId('ils-obs')).toBeNull();
   });
 });
