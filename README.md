@@ -8,7 +8,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Fifteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Sixteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **VOR / ILS** (crossed needles with glideslope), **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
@@ -36,6 +36,7 @@ import {
   VerticalSpeed,
   TurnCoordinator,
   VorIndicator,
+  IlsIndicator,
   AdfIndicator,
   RadioPanel,
   relativeBearing,
@@ -58,6 +59,7 @@ export function Panel({ data }) {
       <VerticalSpeed verticalSpeed={data.vs} />
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
+      <IlsIndicator course={data.obs} radial={data.navRadial} glideslope={data.gsDeviation} />
       <AdfIndicator heading={data.heading} bearing={relativeBearing(data.heading, data.ndbBearing)} />
       <RadioPanel nav={{ active: data.nav1, standby: data.nav1Stby }} adf={{ active: data.adf }} dme={data.dme} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
@@ -164,6 +166,30 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 | `needle`    | `"slide" \| "swing"`     | `"slide"` | How the needle moves. `"slide"` moves a vertical bar sideways over a straight row of dots. `"swing"` hinges the needle just below the top index so it swings like a pendulum over a curved row of dots, as on older VOR heads, with a TO/FR window on the right. |
 
 `vorDeviation(course, radial)` is exported too and returns `{ deviation, toFrom }` if you want the same maths without the drawing.
+
+### `<IlsIndicator />`
+
+A crossed-needle VOR / ILS head with an OBS card, as found in many light aircraft. The vertical needle shows course (VOR or localizer) deviation and the horizontal needle glideslope deviation, each over a scale of 5 dots either side of the centre circle. Small windows show TO (upper right) or FR (lower left), and orange flags with arrows drop into the window at the bottom when the NAV signal is lost and into the window on the right when there is no glideslope. An OBS knob is drawn on the mounting plate. Course inputs work just like `<VorIndicator />`: give `course` and `radial`, or pass `deviation` and `toFrom` directly.
+
+| Prop                  | Type                      | Default   | Description                                                        |
+| --------------------- | ------------------------- | --------- | ------------------------------------------------------------------ |
+| `course`              | `number`                  | `0`       | Selected course (OBS) in degrees.                                  |
+| `radial`              | `number`                  |           | Radial from the station the aircraft is on, in degrees. Drives the course needle and the TO/FROM window. |
+| `deviation`           | `number`                  |           | Course deviation in degrees, positive when the course is to the right. Overrides `radial`. |
+| `fullScale`           | `number`                  | `10`      | Course deviation at full scale (5 dots). `10` suits a VOR; use `2.5` for a localizer. |
+| `toFrom`              | `"TO" \| "FROM" \| "OFF"` |           | TO/FROM indication. Overrides `radial`.                            |
+| `signal`              | `boolean`                 | `true`    | `false` drops the NAV flag, centres the course needle and blanks TO/FROM. |
+| `glideslope`          | `number`                  |           | Glideslope deviation in degrees, positive when the glidepath is above you (fly up). Leave it out when no glideslope is received. |
+| `glideslopeFullScale` | `number`                  | `0.7`     | Glideslope deviation at full scale (5 dots).                       |
+| `glideslopeSignal`    | `boolean`                 |           | Whether the glideslope is received. Defaults to `true` when `glideslope` is a number; `false` drops the GS flag and parks the needle. |
+| `needles`             | `"slide" \| "swing"`      | `"slide"` | `"slide"` moves both needles parallel to themselves over hatched scales. `"swing"` hinges the course needle near the bottom and the glideslope needle near the left, so they pivot like on older heads; without a glideslope the hinged needle is parked above the scale. |
+
+```tsx
+// VOR only: the glideslope flag stays down.
+<IlsIndicator course={270} radial={84} />
+// ILS approach on a localizer, with the older hinged-needle look.
+<IlsIndicator course={265} deviation={-0.8} fullScale={2.5} glideslope={0.2} needles="swing" />
+```
 
 ### `<AdfIndicator />`
 
