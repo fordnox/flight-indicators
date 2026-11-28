@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import {
   AdfIndicator,
@@ -7,6 +7,7 @@ import {
   AoaIndicator,
   AttitudeIndicator,
   DataPanel,
+  DigitalClock,
   EngineIndicator,
   FlapIndicator,
   FuelIndicator,
@@ -22,6 +23,8 @@ import {
   formatAdf,
   formatDme,
   formatNav,
+  formatTimer,
+  HOLD_TIME,
   parseAdf,
   parseNav,
   relativeBearing,
@@ -771,5 +774,241 @@ describe('knobs', () => {
   it('draws no knob on instruments that have none', () => {
     const { container } = render(<Airspeed />);
     expect(container.querySelector('[data-testid^="knob-"]')).toBeNull();
+  });
+});
+
+describe('DigitalClock', () => {
+  // 10:31:12 UTC
+  const NOW = Date.UTC(2026, 10, 28, 10, 31, 12);
+  const button = (b: string) => screen.getByTestId(`clock-button-${b}`);
+  const lower = () => [0, 1, 2, 3].map((i) => screen.getByTestId(`clock-lower-${i}`).getAttribute('data-char')).join('');
+  const upper = () =>
+    [0, 1, 2].map((i) => screen.getByTestId(`clock-upper-${i}`).getAttribute('data-char')).join('') + screen.getByTestId('clock-upper').getAttribute('data-unit');
+  const activeMode = () => ['UT', 'LT', 'FT', 'ET'].filter((m) => screen.getByTestId(`clock-mode-${m}`).getAttribute('data-active') === 'true');
+  const click = (b: string) => {
+    fireEvent.pointerDown(button(b));
+    fireEvent.pointerUp(button(b));
+  };
+  const hold = (b: string) => {
+    fireEvent.pointerDown(button(b));
+    act(() => void vi.advanceTimersByTime(HOLD_TIME + 10));
+    fireEvent.pointerUp(button(b));
+  };
+  const wait = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
+  const label = (c: HTMLElement) => c.querySelector('title')!.textContent;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('is an svg group with three buttons, showing volts and UT by default', () => {
+    const { container } = render(<DigitalClock volts={28.1} oat={15} defaultLocalOffset={0} />);
+    const svg = container.querySelector('svg')!;
+    expect(svg.getAttribute('role')).toBe('group');
+    expect(container.querySelectorAll('[role="button"]')).toHaveLength(3);
+    expect(upper()).toBe('281V');
+    expect(lower()).toBe('1031');
+    expect(activeMode()).toEqual(['UT']);
+    expect(label(container)).toBe('Clock: 28.1 volts, UT 10:31');
+  });
+
+  it('shows dashes without readings, and server-renders', () => {
+    render(<DigitalClock />);
+    expect(upper()).toBe('---V');
+    expect(() => renderToString(<DigitalClock oat={10} volts={14} />)).not.toThrow();
+  });
+
+  it('cycles the upper display volts → °F → °C with O.A.T / VOLTS', () => {
+    const onUpperDisplayChange = vi.fn();
+    render(<DigitalClock volts={28.1} oat={-7} onUpperDisplayChange={onUpperDisplayChange} />);
+    click('oatVolts');
+    expect(upper()).toBe(' 19°F');
+    click('oatVolts');
+    expect(upper()).toBe(' -7°C');
+    click('oatVolts');
+    expect(upper()).toBe('281V');
+    expect(onUpperDisplayChange.mock.calls.map((c) => c[0])).toEqual(['F', 'C', 'volts']);
+  });
+
+  it('cycles UT → LT → FT → ET with SELECT, and can be controlled', () => {
+    const onModeChange = vi.fn();
+    const { rerender } = render(<DigitalClock now={NOW} defaultLocalOffset={120} onModeChange={onModeChange} />);
+    click('select');
+    expect(activeMode()).toEqual(['LT']);
+    expect(lower()).toBe('1231');
+    click('select');
+    click('select');
+    click('select');
+    expect(activeMode()).toEqual(['UT']);
+    expect(onModeChange.mock.calls.map((c) => c[0])).toEqual(['LT', 'FT', 'ET', 'UT']);
+
+    rerender(<DigitalClock now={NOW} mode="FT" onModeChange={onModeChange} />);
+    click('select');
+    expect(onModeChange).toHaveBeenLastCalledWith('ET');
+    expect(activeMode()).toEqual(['FT']);
+  });
+
+  it('runs flight time while flightTimeRunning, MM:SS then HH:MM, and resets it on a held CONTROL', () => {
+    const { rerender, container } = render(<DigitalClock defaultMode="FT" />);
+    expect(lower()).toBe('0000');
+    wait(65_000);
+    expect(lower()).toBe('0105');
+    rerender(<DigitalClock defaultMode="FT" flightTimeRunning={false} />);
+    wait(60_000);
+    expect(lower()).toBe('0105');
+    expect(label(container)).toContain('FT 01:05 stopped');
+    rerender(<DigitalClock defaultMode="FT" flightTimeRunning defaultFlightTime={0} />);
+    wait(3_600_000);
+    expect(lower()).toBe('0101');
+    hold('control');
+    expect(lower()).toBe('0000');
+  });
+
+  it('starts, stops and resets the elapsed timer with CONTROL', () => {
+    const { container } = render(<DigitalClock defaultMode="ET" />);
+    click('control');
+    wait(12_000);
+    expect(lower()).toBe('0012');
+    expect(label(container)).toContain('ET 00:12 running');
+    click('control');
+    wait(5_000);
+    expect(lower()).toBe('0012');
+    click('control');
+    expect(lower()).toBe('0000');
+  });
+
+  it('keeps ET running in the background while another mode is shown', () => {
+    render(<DigitalClock defaultMode="ET" />);
+    click('control');
+    click('select'); // → UT
+    wait(30_000);
+    click('select');
+    click('select');
+    click('select'); // → ET
+    expect(lower()).toBe('0030');
+  });
+
+  it('sets UT digit by digit: hold SELECT, CONTROL steps, SELECT advances and confirms', () => {
+    const onTimeSet = vi.fn();
+    const { container } = render(<DigitalClock now={NOW} onTimeSet={onTimeSet} />);
+    hold('select');
+    expect(label(container)).toContain('(setting)');
+    click('control'); // 1 → 2
+    click('select');
+    click('control'); // 0 → 1  → 21
+    click('select');
+    click('select');
+    click('control'); // 1 → 2  → 21:32
+    click('select'); // confirm
+    expect(lower()).toBe('2132');
+    expect(onTimeSet.mock.calls[0]![0].toISOString()).toBe('2026-11-28T21:32:00.000Z');
+  });
+
+  it('enters set mode with SELECT and CONTROL pressed together, and sets LT hours only', () => {
+    const onLocalOffsetChange = vi.fn();
+    render(<DigitalClock now={NOW} defaultMode="LT" defaultLocalOffset={0} onLocalOffsetChange={onLocalOffsetChange} />);
+    fireEvent.pointerDown(button('select'));
+    fireEvent.pointerDown(button('control'));
+    fireEvent.pointerUp(button('control'));
+    fireEvent.pointerUp(button('select'));
+    click('select');
+    click('control'); // 10 → 11
+    click('select'); // last LT digit → confirm
+    expect(lower()).toBe('1131');
+    expect(onLocalOffsetChange).toHaveBeenLastCalledWith(60);
+  });
+
+  it('wraps digits within their range while setting', () => {
+    const { container } = render(<DigitalClock now={Date.UTC(2026, 0, 1, 23, 0)} />);
+    hold('select');
+    click('control'); // 2 → 0
+    expect(label(container)).toContain('UT 03:00 (setting)');
+    click('control'); // 0 → 1
+    click('control'); // 1 → 2
+    click('select');
+    click('control'); // 3 → 0: hours stop at 23
+    expect(label(container)).toContain('UT 20:00 (setting)');
+  });
+
+  it('counts ET down from a preset, raises an alarm at zero, then counts up', () => {
+    const onAlarm = vi.fn();
+    render(<DigitalClock defaultMode="UT" defaultCountdown={10} onAlarm={onAlarm} />);
+    click('select');
+    click('select');
+    click('select'); // ET
+    expect(lower()).toBe('0010');
+    click('control');
+    wait(4_000);
+    expect(lower()).toBe('0006');
+    click('select'); // go away; the alarm brings ET back
+    wait(8_000);
+    expect(onAlarm).toHaveBeenCalledWith('countdown');
+    expect(activeMode()).toEqual(['ET']);
+    expect(lower()).toBe('0002');
+    // The first press only silences the alarm.
+    click('select');
+    expect(activeMode()).toEqual(['ET']);
+  });
+
+  it('sets the ET count-down with the buttons', () => {
+    render(<DigitalClock defaultMode="ET" />);
+    hold('select');
+    click('select');
+    click('control'); // 0 1 : 0 0
+    click('select');
+    click('select');
+    click('select'); // confirm
+    expect(lower()).toBe('0100');
+  });
+
+  it('raises the flight time alarm', () => {
+    const onAlarm = vi.fn();
+    render(<DigitalClock defaultFlightTimeAlarm={120} onAlarm={onAlarm} />);
+    wait(121_000);
+    expect(onAlarm).toHaveBeenCalledWith('flightTime');
+    expect(activeMode()).toEqual(['FT']);
+  });
+
+  it('flashes volts on low voltage, even when showing OAT, until a button is pressed', () => {
+    const onAlarm = vi.fn();
+    const { rerender, container } = render(<DigitalClock volts={28} oat={20} defaultUpperDisplay="C" onAlarm={onAlarm} />);
+    expect(upper()).toBe(' 20°C');
+    rerender(<DigitalClock volts={23.9} oat={20} defaultUpperDisplay="C" onAlarm={onAlarm} />);
+    expect(onAlarm).toHaveBeenCalledWith('voltage');
+    expect(upper()).toBe('239V');
+    expect(label(container)).toContain('23.9 volts LOW');
+    click('control');
+    expect(upper()).toBe(' 20°C');
+  });
+
+  it('uses 14 V limits for a 14 V system', () => {
+    const onAlarm = vi.fn();
+    render(<DigitalClock volts={13.8} onAlarm={onAlarm} />);
+    expect(onAlarm).not.toHaveBeenCalled();
+  });
+
+  it('lights every segment while O.A.T / VOLTS is held', () => {
+    render(<DigitalClock volts={28} oat={10} />);
+    fireEvent.pointerDown(button('oatVolts'));
+    wait(HOLD_TIME + 10);
+    expect(lower()).toBe('8888');
+    expect(activeMode()).toEqual(['UT', 'LT', 'FT', 'ET']);
+    fireEvent.pointerUp(button('oatVolts'));
+    expect(upper()).toBe('280V');
+  });
+
+  it('works from the keyboard', () => {
+    render(<DigitalClock />);
+    fireEvent.keyDown(button('select'), { key: 'Enter' });
+    fireEvent.keyUp(button('select'), { key: 'Enter' });
+    expect(activeMode()).toEqual(['LT']);
+  });
+
+  it('formats timers like the display', () => {
+    expect(formatTimer(0)).toBe('00:00');
+    expect(formatTimer(125)).toBe('02:05');
+    expect(formatTimer(3600 + 23 * 60)).toBe('01:23');
   });
 });

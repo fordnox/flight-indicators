@@ -34,6 +34,8 @@ interface FrameProps extends InstrumentProps {
   children: ReactNode;
   /** Knobs this instrument has; drawn on top unless `showKnobs` is `false`. */
   knobs?: KnobSpec[];
+  /** ARIA role of the root `<svg>`. Instruments with their own buttons use `"group"` so the buttons stay reachable. Default `"img"`. */
+  role?: 'img' | 'group';
 }
 
 const KNOB_PLACES: Record<KnobSpec['position'], [number, number, number]> = {
@@ -101,6 +103,7 @@ export function InstrumentFrame({
   style,
   title,
   label,
+  role = 'img',
   children,
 }: FrameProps) {
   const titleId = useSvgId('fi-title');
@@ -112,7 +115,7 @@ export function InstrumentFrame({
       viewBox="0 0 400 400"
       width={size}
       height={size}
-      role="img"
+      role={role}
       aria-labelledby={titleId}
       className={className}
       style={{ display: 'inline-block', userSelect: 'none', ...style }}

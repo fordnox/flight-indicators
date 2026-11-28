@@ -26,4 +26,13 @@ export {
 } from './components/EngineIndicator';
 export { FlapIndicator, type FlapIndicatorProps, type FlapSpeedLimit } from './components/FlapIndicator';
 export { AoaIndicator, type AoaIndicatorProps } from './components/AoaIndicator';
+export {
+  DigitalClock,
+  formatTimer,
+  HOLD_TIME,
+  type DigitalClockProps,
+  type ClockMode,
+  type UpperDisplay,
+  type ClockAlarm,
+} from './components/DigitalClock';
 export type { InstrumentProps } from './components/Instrument';

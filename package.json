@@ -1,7 +1,7 @@
 {
   "name": "flight-indicators",
   "version": "1.2.3",
-  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed, turn coordinator, VOR/CDI, crossed-needle VOR/ILS with glideslope, HSI, ADF, NAV/ADF/DME radio panel, wind/runway, fuel, flaps, angle of attack, engine monitor and a custom data panel.",
+  "description": "Modern, dependency-free SVG flight instruments for React: attitude, heading, airspeed, altimeter, vertical speed, turn coordinator, VOR/CDI, crossed-needle VOR/ILS with glideslope, HSI, ADF, NAV/ADF/DME radio panel, wind/runway, fuel, flaps, angle of attack, engine monitor, a custom data panel and an interactive clock with OAT and voltmeter.",
   "keywords": [
     "react",
     "flight",
@@ -27,6 +27,10 @@
     "engine",
     "flaps",
     "aoa",
+    "clock",
+    "timer",
+    "oat",
+    "voltmeter",
     "angle-of-attack",
     "egt",
     "wind",

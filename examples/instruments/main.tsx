@@ -10,6 +10,7 @@ import {
   AoaIndicator,
   AttitudeIndicator,
   DataPanel,
+  DigitalClock,
   EngineIndicator,
   FlapIndicator,
   FuelIndicator,
@@ -22,7 +23,7 @@ import {
   WindIndicator,
 } from '../../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'hdgBug' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'hdgBug' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa' | 'volts';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -45,6 +46,7 @@ const RANGES: Record<Key, [number, number, number]> = {
   fuelF: [0, 30, 0.1],
   flaps: [0, 40, 1],
   aoa: [-2, 22, 0.1],
+  volts: [20, 33, 0.1],
   vs: [-2000, 2000, 50],
   turn: [-6, 6, 0.1],
   slip: [-1, 1, 0.05],
@@ -127,7 +129,7 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
   { title: 'Vertical speed', keys: ['vs'], render: (s) => <VerticalSpeed size={SIZE} verticalSpeed={s.vs} /> },
   {
     title: 'Engine',
-    keys: ['man', 'rpm', 'cht', 'egt', 'oilP', 'oilT', 'fuelP', 'fuelF'],
+    keys: ['man', 'rpm', 'cht', 'egt', 'oilP', 'oilT', 'fuelP', 'fuelF', 'volts'],
     render: (s, u) => (
       <EngineIndicator
         size={SIZE}
@@ -148,7 +150,7 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
           { label: 'Fuel F', value: s.fuelF, min: 0, max: 30, green: [8, 20], unit: 'GPH', decimals: 1 },
         ]}
         amps={10}
-        volts={28.1}
+        volts={s.volts}
         fuelLeft={s.fuelL / 2}
         fuelRight={s.fuelR / 2}
         fuelCapacity={50}
@@ -214,6 +216,12 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
         ]}
       />
     ),
+  },
+  {
+    title: 'Clock / OAT / volts (interactive)',
+    keys: ['oat', 'volts', 'speed'],
+    // Flight time runs while the aeroplane is flying. Set volts below 24.5 to see the low voltage alarm.
+    render: (s) => <DigitalClock size={SIZE} oat={s.oat} volts={s.volts} flightTimeRunning={s.speed > 50} />,
   },
   { title: 'Angle of attack', keys: ['aoa'], render: (s) => <AoaIndicator size={SIZE} aoa={s.aoa} optimum={10} max={18} showValue /> },
   {
@@ -310,7 +318,7 @@ function NpmIcon() {
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, hdgBug: 90, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, hdgBug: 90, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6, volts: 28.1 });
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(false);
@@ -343,6 +351,7 @@ function App() {
         cht: 370 + 15 * Math.sin(t / 9),
         egt: 1350 + 40 * Math.sin(t / 7),
         aoa: 9 + 10 * Math.sin(t / 5),
+        volts: 28.1 + 0.2 * Math.sin(t / 6),
       }));
     }, 250);
     return () => clearInterval(id);

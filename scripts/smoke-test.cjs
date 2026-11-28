@@ -5,9 +5,9 @@ const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const FI = require('flight-indicators');
 
-const expected = ['AdfIndicator', 'Airspeed', 'Altimeter', 'AoaIndicator', 'AttitudeIndicator', 'DataPanel', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'HeadingIndicator', 'HsiIndicator', 'IlsIndicator', 'RadioPanel', 'RadioStack', 'TurnCoordinator', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
-// Interactive HTML controls; everything else is an SVG instrument.
-const controls = ['RadioStack'];
+const expected = ['AdfIndicator', 'Airspeed', 'Altimeter', 'AoaIndicator', 'AttitudeIndicator', 'DataPanel', 'DigitalClock', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'HeadingIndicator', 'HsiIndicator', 'IlsIndicator', 'RadioPanel', 'RadioStack', 'TurnCoordinator', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
+// Interactive controls (an HTML group, or an svg group with buttons); everything else is an SVG instrument.
+const controls = ['RadioStack', 'DigitalClock'];
 // Components are the PascalCase exports; helpers and constants are filtered out.
 const components = (keys) => keys.filter((k) => /^[A-Z][a-z]/.test(k)).sort();
 assert.deepStrictEqual(components(Object.keys(FI)), expected);

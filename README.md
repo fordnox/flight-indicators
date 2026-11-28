@@ -9,7 +9,7 @@
 Modern SVG flight instruments for React, with no runtime dependencies.
 
 - Seventeen instruments: **Attitude**, **Heading**, **HSI** (horizontal situation indicator), **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **VOR / ILS** (crossed needles with glideslope), **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
-- Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies
+- Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies, and **DigitalClock**, an interactive panel clock with OAT and voltmeter, flight time, a stopwatch / count-down timer and alarms
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
 - Ships ESM and CommonJS builds, works with server-side rendering, and is marked `"use client"` for the Next.js App Router
@@ -47,6 +47,7 @@ import {
   AoaIndicator,
   EngineIndicator,
   DataPanel,
+  DigitalClock,
 } from 'flight-indicators';
 
 export function Panel({ data }) {
@@ -64,6 +65,7 @@ export function Panel({ data }) {
       <HsiIndicator heading={data.heading} headingBug={data.hdgBug} course={data.obs} radial={data.navRadial} glideslope={data.gsDeviation} />
       <AdfIndicator heading={data.heading} bearing={relativeBearing(data.heading, data.ndbBearing)} />
       <RadioPanel nav={{ active: data.nav1, standby: data.nav1Stby }} adf={{ active: data.adf }} dme={data.dme} />
+      <DigitalClock oat={data.oat} volts={data.busVolts} flightTimeRunning={data.ias > 50} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
       <FlapIndicator flaps={data.flaps} airspeed={data.ias} speedLimits={[{ flaps: 0, speed: 160 }, { flaps: 10, speed: 110 }]} />
       <EngineIndicator manifold={{ value: data.map }} rpm={{ value: data.rpm }} cht={data.cht} egt={data.egt} fuelLeft={data.fuelL} fuelRight={data.fuelR} />
@@ -271,6 +273,61 @@ const [adf, setAdf] = useState({});
 | `title`        | `string`                                | `"Radio panel"` | Accessible name of the group.                                   |
 
 It also takes `className` and `style`, but not the other [common props](#common-props). `parseNav` and `parseAdf` are exported for validating frequencies yourself.
+
+### `<DigitalClock />`
+
+A two-window panel clock as fitted to many light aircraft, with working buttons. The upper display shows bus voltage or outside air temperature; the lower display shows universal time (UT), local time (LT), flight time (FT) or the elapsed timer (ET), with a triangle under the active mode. It keeps running on its own (from the system clock, or from `now` if you pass simulator time) and is an svg `role="group"` whose three buttons can be clicked, tapped or used from the keyboard (Tab, then Enter or Space).
+
+```tsx
+<DigitalClock oat={data.oat} volts={data.busVolts} flightTimeRunning={data.ias > 50} onAlarm={(a) => console.log(a)} />
+```
+
+| Button                         | Press                                                                                       | Hold (2 s)                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **O.A.T / VOLTS** (top)        | Upper display: volts → °F → °C                                                              | Display test: every segment lights while held         |
+| **SELECT**                     | Lower display: UT → LT → FT → ET. In set mode: next digit, and confirm after the last one   | Enter set mode (same as SELECT + CONTROL together)    |
+| **CONTROL**                    | In ET: start → stop → reset. In set mode: step the flashing digit                           | In FT or ET: reset that timer to zero                 |
+| **SELECT + CONTROL** together  | Enter set mode for the mode shown, or confirm it                                            |                                                       |
+
+What set mode sets in each mode:
+
+- **UT**: hours and minutes of universal time (`onTimeSet` reports the new time).
+- **LT**: the hours of local time; its minutes always follow UT (`onLocalOffsetChange` reports the new offset).
+- **FT**: the flight time alarm, HH:MM. `00:00` turns it off.
+- **ET**: a count-down, MM:SS. CONTROL then starts it; at zero the alarm goes off and ET carries on counting up. `00:00` makes ET a plain stopwatch again.
+
+FT and ET show `MM:SS` for the first hour and `HH:MM` after that. ET keeps running while another mode is shown.
+
+Alarms flash their display until any button is pressed (that first press does nothing else) and call `onAlarm`:
+
+- `"voltage"`: the bus voltage is below `lowVoltage` or above `highVoltage`. The upper display switches to volts while it flashes.
+- `"countdown"`: the ET count-down reached zero. The lower display switches to ET.
+- `"flightTime"`: flight time reached the alarm time. The lower display switches to FT.
+
+| Prop                     | Type                         | Default         | Description                                                    |
+| ------------------------ | ---------------------------- | --------------- | -------------------------------------------------------------- |
+| `oat`                    | `number`                     |                 | Outside air temperature in °C. Left out or `NaN` shows dashes. |
+| `volts`                  | `number`                     |                 | Bus voltage. Left out or `NaN` shows dashes.                   |
+| `upperDisplay`           | `"volts" \| "F" \| "C"`      |                 | Upper display reading. Pass it to control the component.       |
+| `defaultUpperDisplay`    | `"volts" \| "F" \| "C"`      | `"volts"`       | Starting reading when `upperDisplay` is left out.              |
+| `onUpperDisplayChange`   | `(next) => void`             |                 | Called when O.A.T / VOLTS is pressed.                          |
+| `mode`                   | `"UT" \| "LT" \| "FT" \| "ET"` |              | Lower display mode. Pass it to control the component.          |
+| `defaultMode`            | `"UT" \| "LT" \| "FT" \| "ET"` | `"UT"`        | Starting mode when `mode` is left out.                         |
+| `onModeChange`           | `(next) => void`             |                 | Called when SELECT is pressed or an alarm brings its mode up.  |
+| `now`                    | `number \| Date`             | system clock    | Current time (ms since the epoch or a `Date`). Pass simulator time to run the clock, FT and ET from it. |
+| `localOffset`            | `number`                     |                 | Local time offset from UT in minutes, e.g. `120` for UTC+2. Pass it to control the component. |
+| `defaultLocalOffset`     | `number`                     | browser time zone | Starting offset when `localOffset` is left out.              |
+| `onLocalOffsetChange`    | `(minutes) => void`          |                 | Called when LT is set with the buttons.                        |
+| `onTimeSet`              | `(utc: Date) => void`        |                 | Called with the new universal time when UT is set with the buttons. |
+| `flightTimeRunning`      | `boolean`                    | `true`          | Whether flight time is counting. Wire it to airspeed or the engine. |
+| `defaultFlightTime`      | `number`                     | `0`             | Flight time already logged when the clock mounts, in seconds.  |
+| `defaultFlightTimeAlarm` | `number`                     | `0` (off)       | Flight time alarm in seconds.                                  |
+| `defaultCountdown`       | `number`                     | `0` (off)       | ET count-down in seconds.                                      |
+| `lowVoltage`             | `number`                     | `24.5` / `12.4` | Low voltage alarm. The default depends on whether `volts` looks like a 28 V or a 14 V system. |
+| `highVoltage`            | `number`                     | `32` / `16`     | High voltage alarm.                                            |
+| `onAlarm`                | `(alarm) => void`            |                 | Called with `"voltage"`, `"countdown"` or `"flightTime"` when an alarm goes off. |
+
+It also takes the [common props](#common-props) (`showKnobs` does nothing, since its buttons are always drawn). `formatTimer(seconds)` is exported to format a timer the way the clock shows it, and `HOLD_TIME` is the hold time in ms.
 
 ### `<FuelIndicator />`
 
