@@ -7,6 +7,7 @@ export { TurnCoordinator, type TurnCoordinatorProps } from './components/TurnCoo
 export { WindIndicator, type WindIndicatorProps, type RunwaySide } from './components/WindIndicator';
 export { VorIndicator, vorDeviation, type VorIndicatorProps, type ToFrom, type VorNeedle } from './components/VorIndicator';
 export { IlsIndicator, type IlsIndicatorProps, type IlsNeedles } from './components/IlsIndicator';
+export { HsiIndicator, type HsiIndicatorProps } from './components/HsiIndicator';
 export { AdfIndicator, relativeBearing, type AdfIndicatorProps } from './components/AdfIndicator';
 export { RadioPanel, formatNav, formatAdf, formatDme, type RadioPanelProps, type RadioFrequency } from './components/RadioPanel';
 export { RadioStack, parseNav, parseAdf, type RadioStackProps } from './components/RadioStack';

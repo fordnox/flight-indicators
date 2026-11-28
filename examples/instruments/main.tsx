@@ -14,6 +14,7 @@ import {
   FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
+  HsiIndicator,
   IlsIndicator,
   TurnCoordinator,
   VerticalSpeed,
@@ -21,7 +22,7 @@ import {
   WindIndicator,
 } from '../../src';
 
-type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
+type Key = 'roll' | 'pitch' | 'heading' | 'speed' | 'altitude' | 'vs' | 'turn' | 'slip' | 'runway' | 'windDir' | 'windSpeed' | 'gust' | 'hdgBug' | 'course' | 'radial' | 'gs' | 'ndb' | 'dme' | 'qnh' | 'oat' | 'fuelL' | 'fuelR' | 'man' | 'rpm' | 'cht' | 'egt' | 'oilP' | 'oilT' | 'fuelP' | 'fuelF' | 'flaps' | 'aoa';
 type State = Record<Key, number>;
 
 const RANGES: Record<Key, [number, number, number]> = {
@@ -51,6 +52,7 @@ const RANGES: Record<Key, [number, number, number]> = {
   windDir: [0, 359, 1],
   windSpeed: [0, 40, 1],
   gust: [0, 50, 1],
+  hdgBug: [0, 359, 1],
   course: [0, 359, 1],
   radial: [0, 359, 1],
   gs: [-0.7, 0.7, 0.01],
@@ -168,6 +170,13 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
     title: 'VOR / ILS (hinged needles)',
     keys: ['course', 'radial', 'gs'],
     render: (s, _u, k) => <IlsIndicator size={SIZE} showKnobs={k} course={s.course} radial={s.radial} glideslope={s.gs} needles="swing" />,
+  },
+  {
+    title: 'HSI',
+    keys: ['heading', 'hdgBug', 'course', 'radial', 'gs'],
+    render: (s, _u, k) => (
+      <HsiIndicator size={SIZE} showKnobs={k} heading={s.heading} headingBug={s.hdgBug} course={s.course} radial={s.radial} glideslope={s.gs} />
+    ),
   },
   {
     title: 'ADF',
@@ -301,7 +310,7 @@ function NpmIcon() {
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 
 function App() {
-  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
+  const [s, setS] = useState<State>({ roll: 0, pitch: 0, heading: 0, speed: 0, altitude: 0, vs: 0, turn: 0, slip: 0, runway: 90, windDir: 134, windSpeed: 8, gust: 0, hdgBug: 90, course: 90, radial: 272, gs: 0.1, ndb: 40, dme: 18.4, qnh: 1013, oat: 15, fuelL: 88.7, fuelR: 100, man: 27.4, rpm: 2400, cht: 385, egt: 1385, oilP: 50, oilT: 202, fuelP: 15.9, fuelF: 15.5, flaps: 20, aoa: 6 });
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(false);
@@ -347,7 +356,7 @@ function App() {
           <a href={REPO_URL} target="_blank" rel="noreferrer">
             <GithubIcon /> GitHub
           </a>
-          <a href="./navigation.html">VOR &amp; ILS examples</a>
+          <a href="./navigation.html">VOR, ILS &amp; HSI examples</a>
           <a href={NPM_URL} target="_blank" rel="noreferrer">
             <NpmIcon /> npm
           </a>

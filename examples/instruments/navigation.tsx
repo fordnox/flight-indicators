@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { IlsIndicator, VorIndicator, vorDeviation, type IlsIndicatorProps, type InstrumentProps, type ToFrom } from '../../src';
+import { HsiIndicator, IlsIndicator, VorIndicator, vorDeviation, type IlsIndicatorProps, type InstrumentProps, type ToFrom } from '../../src';
 
 const norm = (deg: number) => ((deg % 360) + 360) % 360;
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -83,6 +83,9 @@ interface VorState {
   obs: number;
 }
 
+/** Autopilot intercept: fly the selected course, angled towards the needle (4° per degree off, 45° max). */
+const interceptHeading = (obs: number, radial: number) => norm(obs + clamp(vorDeviation(obs, radial).deviation * 4, -45, 45));
+
 function VorSection() {
   const [st, setSt] = useState<VorState>({ x: -14, y: -9, heading: 60, obs: 90 });
   const [flying, setFlying] = useState(true);
@@ -101,10 +104,7 @@ function VorSection() {
     setSt((s) => {
       let heading = s.heading;
       if (autopilot) {
-        // Intercept: fly the selected course, angled towards the needle (4° per degree off, 45° max), 3° per tick turn rate.
-        const r = norm(toDeg(Math.atan2(s.x, s.y)));
-        const dev = vorDeviation(s.obs, r).deviation;
-        const want = norm(s.obs + clamp(dev * 4, -45, 45));
+        const want = interceptHeading(s.obs, norm(toDeg(Math.atan2(s.x, s.y))));
         heading = norm(heading + clamp(signedDiff(want, heading), -3, 3));
       }
       let x = s.x + VOR_NM_PER_TICK * Math.sin(rad(heading));
@@ -130,6 +130,8 @@ function VorSection() {
   const [fx, fy] = courseEnd(st.obs, 40);
   const [tx, ty] = courseEnd(st.obs + 180, 40);
   const flag: ToFrom = signal ? toFrom : 'OFF';
+  // The HSI's heading bug shows where the autopilot is steering; flown by hand it marks the current heading.
+  const bug = autopilot ? Math.round(interceptHeading(st.obs, radial)) : Math.round(st.heading);
   const devText = !signal ? '---' : Math.abs(deviation) > 90 ? '---' : `${Math.abs(deviation).toFixed(1)}° ${deviation >= 0 ? 'R' : 'L'}`;
 
   return (
@@ -138,8 +140,9 @@ function VorSection() {
       <p>
         The aircraft flies around a VOR station. Turn the OBS to pick a course: the needle shows which side of that course line you are on and the
         flag shows whether the course takes you TO or FROM the station. Click the map to move the aircraft. Over the station (the cone of
-        confusion) and with the VOR failed, the NAV flag drops. All four heads below get the same two props: <code>course</code> and{' '}
-        <code>radial</code>.
+        confusion) and with the VOR failed, the NAV flag drops. The VOR and ILS heads get the same two props: <code>course</code> and{' '}
+        <code>radial</code>. The HSI also gets the aircraft <code>heading</code>, so its course pointer shows the course line as seen from above,
+        and a <code>headingBug</code> on the heading the autopilot is steering.
       </p>
       <div className="sim">
         <div className="card">
@@ -219,6 +222,9 @@ function VorSection() {
             <Head caption='needles="swing"'>
               <IlsIndicator size={HEAD} course={st.obs} radial={radial} signal={signal} needles="swing" />
             </Head>
+            <Head caption='<HsiIndicator />'>
+              <HsiIndicator size={HEAD} heading={st.heading} headingBug={bug} course={st.obs} radial={radial} signal={signal} />
+            </Head>
           </div>
           <div className="readouts">
             <Readout name="Radial (from)" value={`${pad3(radial)}°`} />
@@ -228,7 +234,7 @@ function VorSection() {
             <Readout name="Deviation" value={devText} />
             <Readout name="Flag" value={signal ? flag : 'NAV'} />
           </div>
-          <p className="hint">The ILS heads show their GS flag here because a VOR has no glideslope.</p>
+          <p className="hint">The ILS and HSI heads show their GS flag here because a VOR has no glideslope.</p>
         </div>
       </div>
     </section>
@@ -282,6 +288,8 @@ function IlsSection() {
   });
 
   const { loc, gs, height } = ilsDeviation(st);
+  // The pilot steers back towards the centreline, so the heading wanders a few degrees either side of the runway's 090°.
+  const heading = 90 - clamp(st.lateral * 8, -10, 10);
   const locSignal = !failLoc && st.dist <= 18 && Math.abs(loc) < 35;
   const gsSignal = !failGs && st.dist <= 10 && Math.abs(loc) < 8;
   const common: IlsIndicatorProps = {
@@ -395,6 +403,9 @@ function IlsSection() {
             <Head caption='needles="swing"'>
               <IlsIndicator {...common} needles="swing" />
             </Head>
+            <Head caption='<HsiIndicator fullScale={2.5} />'>
+              <HsiIndicator {...common} heading={heading} headingBug={90} />
+            </Head>
           </div>
           <div className="readouts">
             <Readout name="Distance" value={`${st.dist.toFixed(1)} NM`} />
@@ -416,12 +427,13 @@ function IlsSection() {
 
 /* ------------------------------------------------------------ Scenarios */
 
-type HeadKind = 'vor-slide' | 'vor-swing' | 'ils-slide' | 'ils-swing';
+type HeadKind = 'vor-slide' | 'vor-swing' | 'ils-slide' | 'ils-swing' | 'hsi';
 const KINDS: Array<{ kind: HeadKind; label: string }> = [
   { kind: 'vor-slide', label: 'VorIndicator' },
   { kind: 'vor-swing', label: 'VorIndicator, swing' },
   { kind: 'ils-slide', label: 'IlsIndicator' },
   { kind: 'ils-swing', label: 'IlsIndicator, swing' },
+  { kind: 'hsi', label: 'HsiIndicator' },
 ];
 
 interface Scenario {
@@ -465,7 +477,8 @@ function ScenarioSection() {
       <h2>Needle and flag states</h2>
       <p>
         Fixed snapshots of the situations you meet on VOR and ILS approaches, with the props that produce each one. Pick the head style to compare.
-        Scenarios that use glideslope or localizer props always use <code>IlsIndicator</code>.
+        Scenarios that use glideslope or localizer props use <code>IlsIndicator</code> unless the HSI is picked. The HSI has 2 dots each side
+        instead of 5, so the same deviation sits at a different dot.
       </p>
       <div className="buttons">
         {KINDS.map((k) => (
@@ -476,6 +489,18 @@ function ScenarioSection() {
       </div>
       <div className="scenarios">
         {SCENARIOS.map(({ title, text, props, ils }) => {
+          if (kind === 'hsi') {
+            // Heading on the course, so the course pointer points straight up.
+            const hsiProps = { heading: props.course, ...props };
+            return (
+              <div key={title} className="card scenario">
+                <h3>{title}</h3>
+                <HsiIndicator size={180} {...hsiProps} />
+                <p>{text}</p>
+                <pre>{snippet('HsiIndicator', {}, hsiProps)}</pre>
+              </div>
+            );
+          }
           const useIls = ils || kind.startsWith('ils');
           const style = swing ? (useIls ? { needles: 'swing' } : { needle: 'swing' }) : {};
           return (
@@ -500,13 +525,13 @@ function App() {
   return (
     <main>
       <header className="page-header">
-        <h1>VOR &amp; ILS</h1>
+        <h1>VOR, ILS &amp; HSI</h1>
         <a className="back" href="./index.html">
           ← All instruments
         </a>
       </header>
       <p className="tagline">
-        Interactive examples for <code>VorIndicator</code> and <code>IlsIndicator</code> from flight-indicators.
+        Interactive examples for <code>VorIndicator</code>, <code>IlsIndicator</code> and <code>HsiIndicator</code> from flight-indicators.
       </p>
       <VorSection />
       <IlsSection />

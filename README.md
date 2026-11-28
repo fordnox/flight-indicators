@@ -8,7 +8,7 @@
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
-- Sixteen instruments: **Attitude**, **Heading**, **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **VOR / ILS** (crossed needles with glideslope), **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- Seventeen instruments: **Attitude**, **Heading**, **HSI** (horizontal situation indicator), **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **VOR / ILS** (crossed needles with glideslope), **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
 - Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
@@ -37,6 +37,7 @@ import {
   TurnCoordinator,
   VorIndicator,
   IlsIndicator,
+  HsiIndicator,
   AdfIndicator,
   RadioPanel,
   relativeBearing,
@@ -60,6 +61,7 @@ export function Panel({ data }) {
       <WindIndicator runway={90} windDirection={data.windDir} windSpeed={data.windSpeed} />
       <VorIndicator course={data.obs} radial={data.navRadial} />
       <IlsIndicator course={data.obs} radial={data.navRadial} glideslope={data.gsDeviation} />
+      <HsiIndicator heading={data.heading} headingBug={data.hdgBug} course={data.obs} radial={data.navRadial} glideslope={data.gsDeviation} />
       <AdfIndicator heading={data.heading} bearing={relativeBearing(data.heading, data.ndbBearing)} />
       <RadioPanel nav={{ active: data.nav1, standby: data.nav1Stby }} adf={{ active: data.adf }} dme={data.dme} />
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
@@ -87,7 +89,7 @@ Every instrument accepts these props:
 | ------------------- | ------------------ | ------- | --------------------------------------------------------- |
 | `size`              | `number \| string` | `200`   | Width and height. A number means pixels; a string can be any CSS length, e.g. `"100%"`. |
 | `showBox`           | `boolean`          | `true`  | Draw the square mounting plate with screws.               |
-| `showKnobs`         | `boolean`          | `true`  | Draw the setting knobs on instruments that have them: OBS on `VorIndicator` and `IlsIndicator`, baro on `Altimeter`, PUSH (gyro set) on `HeadingIndicator`, HDG on `AdfIndicator` and the adjustment knob on `AttitudeIndicator`. Each knob's rim turns with the value it sets. |
+| `showKnobs`         | `boolean`          | `true`  | Draw the setting knobs on instruments that have them: OBS on `VorIndicator` and `IlsIndicator`, CRS and HDG on `HsiIndicator`, baro on `Altimeter`, PUSH (gyro set) on `HeadingIndicator`, HDG on `AdfIndicator` and the adjustment knob on `AttitudeIndicator`. Each knob's rim turns with the value it sets. |
 | `animationDuration` | `number`           | `300`   | Animation time in ms. `0` turns animation off.            |
 | `className`         | `string`           |         | Class for the root `<svg>`.                               |
 | `style`             | `CSSProperties`    |         | Inline style for the root `<svg>`.                        |
@@ -190,6 +192,31 @@ A crossed-needle VOR / ILS head with an OBS card, as found in many light aircraf
 <IlsIndicator course={270} radial={84} />
 // ILS approach on a localizer, with the older hinged-needle look.
 <IlsIndicator course={265} deviation={-0.8} fullScale={2.5} glideslope={0.2} needles="swing" />
+```
+
+### `<HsiIndicator />`
+
+A horizontal situation indicator: a heading indicator and a VOR / ILS head in one dial. The compass card turns with the `heading` under a fixed aircraft symbol, so the instrument shows the course line the way you would see it from above. The yellow course pointer turns with the selected `course`, and its middle section, the deviation bar, slides sideways to show where the course line lies relative to the aircraft (2 dots each side). A white triangle points TO or FROM the station, an orange heading bug marks `headingBug`, and green pointers on both sides show glideslope deviation. Red flags show NAV when the signal is lost and GS when there is no glideslope. Course inputs work just like `<VorIndicator />` and `<IlsIndicator />`: give `course` and `radial`, or pass `deviation` and `toFrom` directly. The CRS knob (lower left) turns with the course and the HDG knob (lower right) with the heading bug.
+
+| Prop                  | Type                      | Default | Description                                                        |
+| --------------------- | ------------------------- | ------- | ------------------------------------------------------------------ |
+| `heading`             | `number`                  | `0`     | Aircraft heading in degrees. Any value is accepted and wrapped to 0–359. |
+| `headingBug`          | `number`                  |         | Heading bug in degrees. Leave it out to hide the bug.              |
+| `course`              | `number`                  | `0`     | Selected course in degrees.                                        |
+| `radial`              | `number`                  |         | Radial from the station the aircraft is on, in degrees. Drives the deviation bar and the TO/FROM triangle. |
+| `deviation`           | `number`                  |         | Course deviation in degrees, positive when the course is to the right. Overrides `radial`. |
+| `fullScale`           | `number`                  | `10`    | Course deviation at full scale (2 dots). `10` suits a VOR; use `2.5` for a localizer. |
+| `toFrom`              | `"TO" \| "FROM" \| "OFF"` |         | TO/FROM indication. Overrides `radial`.                            |
+| `signal`              | `boolean`                 | `true`  | `false` shows the NAV flag, centres the deviation bar and hides TO/FROM. |
+| `glideslope`          | `number`                  |         | Glideslope deviation in degrees, positive when the glidepath is above you (fly up). Leave it out when no glideslope is received. |
+| `glideslopeFullScale` | `number`                  | `0.7`   | Glideslope deviation at full scale (2 dots).                       |
+| `glideslopeSignal`    | `boolean`                 |         | Whether the glideslope is received. Defaults to `true` when `glideslope` is a number; `false` shows the GS flag and hides the pointers. |
+
+```tsx
+// Tracking a VOR radial with the heading bug set to the intercept heading.
+<HsiIndicator heading={60} headingBug={60} course={90} radial={262} />
+// On an ILS approach: localizer sensitivity and glideslope.
+<HsiIndicator heading={262} headingBug={265} course={265} deviation={-0.8} fullScale={2.5} glideslope={0.2} />
 ```
 
 ### `<AdfIndicator />`
@@ -336,7 +363,7 @@ Each `DataField`:
 Examples live under [`examples/`](examples), one folder each:
 
 - [`examples/instruments`](examples/instruments): the gallery behind the live demo, with every instrument on simulated flight data and sliders to drive each one by hand.
-- [`examples/instruments/navigation.html`](examples/instruments/navigation.tsx) ([live](https://flight-indicators.harvis.page/navigation.html)): VOR and ILS in depth. Track a radial around a VOR station on a map, fly an ILS approach with plan and profile views and LOC / GS failures, and browse snapshots of every needle and flag state with the props behind each one.
+- [`examples/instruments/navigation.html`](examples/instruments/navigation.tsx) ([live](https://flight-indicators.harvis.page/navigation.html)): VOR, ILS and HSI in depth. Track a radial around a VOR station on a map, fly an ILS approach with plan and profile views and LOC / GS failures, and browse snapshots of every needle and flag state with the props behind each one.
 - [IFR trainer](https://github.com/fordnox/ifr-trainer) (separate repository): a radio navigation simulator built with this library.
 
 ## Development

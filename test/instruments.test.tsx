@@ -11,6 +11,7 @@ import {
   FlapIndicator,
   FuelIndicator,
   HeadingIndicator,
+  HsiIndicator,
   IlsIndicator,
   RadioPanel,
   RadioStack,
@@ -41,6 +42,7 @@ describe('rendering', () => {
     ['vor', <VorIndicator />],
     ['ils', <IlsIndicator />],
     ['ils-swing', <IlsIndicator needles="swing" />],
+    ['hsi', <HsiIndicator />],
     ['adf', <AdfIndicator />],
     ['radio', <RadioPanel />],
     ['data', <DataPanel />],
@@ -664,10 +666,78 @@ describe('IlsIndicator', () => {
   });
 });
 
+describe('HsiIndicator', () => {
+  const opacityOf = (id: string) => screen.getByTestId(id).getAttribute('opacity');
+  const title = () => document.querySelector('title')!.textContent;
+
+  it('turns the card with the heading and the course pointer with the course', () => {
+    render(<HsiIndicator heading={60} headingBug={120} course={90} radial={262} glideslope={0.35} />);
+    expect(transformOf('hsi-card')).toBe('rotate(-60deg)');
+    // Bug and course pointer ride on the card, so they are set at their own compass angle.
+    expect(transformOf('hsi-heading-bug')).toBe('rotate(120deg)');
+    expect(transformOf('hsi-course')).toBe('rotate(90deg)');
+    // 8° left of a ±10° full scale (72 px): -57.6 px.
+    expect(transformOf('hsi-cdi')).toBe('translate(-57.6px, 0px)');
+    expect(transformOf('hsi-gs-pointer')).toBe('translate(0px, -24px)');
+    expect(opacityOf('hsi-to')).toBe('1');
+    expect(opacityOf('hsi-from')).toBe('0');
+    expect(opacityOf('hsi-heading-bug')).toBe('1');
+    expect(opacityOf('hsi-nav-flag')).toBe('0');
+    expect(opacityOf('hsi-gs-flag')).toBe('0');
+    expect(opacityOf('hsi-gs-pointer')).toBe('1');
+    expect(title()).toBe('HSI: heading 060°, course 090°, course bar 8.0° left, TO, glideslope 0.35° up, heading bug 120°');
+  });
+
+  it('clamps to full scale and honours a localizer full scale', () => {
+    const { rerender } = render(<HsiIndicator deviation={25} toFrom="FROM" glideslope={-3} />);
+    expect(transformOf('hsi-cdi')).toBe('translate(72px, 0px)');
+    expect(transformOf('hsi-gs-pointer')).toBe('translate(0px, 48px)');
+    expect(opacityOf('hsi-from')).toBe('1');
+    rerender(<HsiIndicator deviation={-1.25} fullScale={2.5} glideslope={0.35} />);
+    expect(transformOf('hsi-cdi')).toBe('translate(-36px, 0px)');
+    expect(transformOf('hsi-gs-pointer')).toBe('translate(0px, -24px)');
+  });
+
+  it('shows the flags and centres the bar without a signal', () => {
+    const { rerender } = render(<HsiIndicator course={45} radial={50} signal={false} />);
+    expect(opacityOf('hsi-nav-flag')).toBe('1');
+    expect(opacityOf('hsi-gs-flag')).toBe('1');
+    expect(opacityOf('hsi-gs-pointer')).toBe('0');
+    expect(opacityOf('hsi-to')).toBe('0');
+    expect(opacityOf('hsi-from')).toBe('0');
+    expect(opacityOf('hsi-heading-bug')).toBe('0');
+    expect(transformOf('hsi-cdi')).toBe('translate(0px, 0px)');
+    expect(title()).toBe('HSI: heading 360°, course 045°, no NAV signal, glideslope off');
+    rerender(<HsiIndicator heading={NaN} course={NaN} radial={NaN} deviation={NaN} glideslope={NaN} headingBug={NaN} />);
+    expect(opacityOf('hsi-nav-flag')).toBe('0');
+    expect(opacityOf('hsi-gs-flag')).toBe('1');
+    expect(opacityOf('hsi-heading-bug')).toBe('0');
+    expect(transformOf('hsi-card')).toBe('rotate(0deg)');
+    expect(transformOf('hsi-course')).toBe('rotate(0deg)');
+    rerender(<HsiIndicator glideslope={0.2} glideslopeSignal={false} />);
+    expect(opacityOf('hsi-gs-flag')).toBe('1');
+  });
+
+  it('takes the shortest way round through north', () => {
+    const { rerender } = render(<HsiIndicator heading={350} course={355} />);
+    rerender(<HsiIndicator heading={10} course={5} />);
+    expect(transformOf('hsi-card')).toBe('rotate(-370deg)');
+    expect(transformOf('hsi-course')).toBe('rotate(365deg)');
+  });
+
+  it('turns the CRS and HDG knobs with the course and heading bug', () => {
+    render(<HsiIndicator course={120} headingBug={200} />);
+    expect(transformOf('knob-crs-rim')).toBe('rotate(120deg)');
+    expect(transformOf('knob-hdg-rim')).toBe('rotate(200deg)');
+  });
+});
+
 describe('knobs', () => {
   it.each([
     ['obs', <VorIndicator course={30} />],
     ['obs', <IlsIndicator />],
+    ['crs', <HsiIndicator />],
+    ['hdg', <HsiIndicator headingBug={10} />],
     ['baro', <Altimeter />],
     ['set', <HeadingIndicator />],
     ['hdg', <AdfIndicator />],
