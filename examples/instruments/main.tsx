@@ -116,12 +116,12 @@ const AMBER = '#ffb000';
 const RED = '#ff2a2a';
 
 /** One card per instrument: its title, the state keys it is driven by, and how to draw it. */
-const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit) => ReactNode }> = [
+const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit, knobs: boolean) => ReactNode }> = [
   { title: 'Airspeed', keys: ['speed'], render: (s) => <Airspeed size={SIZE} speed={s.speed} /> },
-  { title: 'Attitude', keys: ['roll', 'pitch'], render: (s) => <AttitudeIndicator size={SIZE} roll={s.roll} pitch={s.pitch} /> },
-  { title: 'Altimeter', keys: ['altitude', 'qnh'], render: (s) => <Altimeter size={SIZE} altitude={s.altitude} pressure={s.qnh} /> },
+  { title: 'Attitude', keys: ['roll', 'pitch'], render: (s, _u, k) => <AttitudeIndicator size={SIZE} showKnobs={k} roll={s.roll} pitch={s.pitch} /> },
+  { title: 'Altimeter', keys: ['altitude', 'qnh'], render: (s, _u, k) => <Altimeter size={SIZE} showKnobs={k} altitude={s.altitude} pressure={s.qnh} /> },
   { title: 'Turn coordinator', keys: ['turn', 'slip'], render: (s) => <TurnCoordinator size={SIZE} turnRate={s.turn} slip={s.slip} /> },
-  { title: 'Heading', keys: ['heading'], render: (s) => <HeadingIndicator size={SIZE} heading={s.heading} /> },
+  { title: 'Heading', keys: ['heading'], render: (s, _u, k) => <HeadingIndicator size={SIZE} showKnobs={k} heading={s.heading} /> },
   { title: 'Vertical speed', keys: ['vs'], render: (s) => <VerticalSpeed size={SIZE} verticalSpeed={s.vs} /> },
   {
     title: 'Engine',
@@ -153,26 +153,26 @@ const PANELS: Array<{ title: string; keys: Key[]; render: (s: State, u: TempUnit
       />
     ),
   },
-  { title: 'VOR', keys: ['course', 'radial'], render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} /> },
+  { title: 'VOR', keys: ['course', 'radial'], render: (s, _u, k) => <VorIndicator size={SIZE} showKnobs={k} course={s.course} radial={s.radial} /> },
   {
     title: 'VOR (swinging needle)',
     keys: ['course', 'radial'],
-    render: (s) => <VorIndicator size={SIZE} course={s.course} radial={s.radial} needle="swing" />,
+    render: (s, _u, k) => <VorIndicator size={SIZE} showKnobs={k} course={s.course} radial={s.radial} needle="swing" />,
   },
   {
     title: 'VOR / ILS (crossed needles)',
     keys: ['course', 'radial', 'gs'],
-    render: (s) => <IlsIndicator size={SIZE} course={s.course} radial={s.radial} glideslope={s.gs} />,
+    render: (s, _u, k) => <IlsIndicator size={SIZE} showKnobs={k} course={s.course} radial={s.radial} glideslope={s.gs} />,
   },
   {
     title: 'VOR / ILS (hinged needles)',
     keys: ['course', 'radial', 'gs'],
-    render: (s) => <IlsIndicator size={SIZE} course={s.course} radial={s.radial} glideslope={s.gs} needles="swing" />,
+    render: (s, _u, k) => <IlsIndicator size={SIZE} showKnobs={k} course={s.course} radial={s.radial} glideslope={s.gs} needles="swing" />,
   },
   {
     title: 'ADF',
     keys: ['heading', 'ndb'],
-    render: (s) => <AdfIndicator size={SIZE} heading={s.heading} bearing={relativeBearing(s.heading, s.ndb)} />,
+    render: (s, _u, k) => <AdfIndicator size={SIZE} showKnobs={k} heading={s.heading} bearing={relativeBearing(s.heading, s.ndb)} />,
   },
   {
     title: 'Radio',
@@ -305,6 +305,7 @@ function App() {
   const [simulate, setSimulate] = useState(true);
   const [tempUnit, setTempUnit] = useState<TempUnit>('F');
   const [showControls, setShowControls] = useState(false);
+  const [showKnobs, setShowKnobs] = useState(true);
 
   useEffect(() => {
     if (!simulate) return;
@@ -362,6 +363,9 @@ function App() {
         <label className="toggle">
           <input type="checkbox" checked={showControls} onChange={(e) => setShowControls(e.target.checked)} /> Show controls
         </label>
+        <label className="toggle">
+          <input type="checkbox" checked={showKnobs} onChange={(e) => setShowKnobs(e.target.checked)} /> Show knobs
+        </label>
         <fieldset className="toggle radio-group">
           <legend>Temperature</legend>
           {(['F', 'C'] as const).map((unit) => (
@@ -375,7 +379,7 @@ function App() {
         {PANELS.map(({ title, keys, render }) => (
           <section key={title} className="panel">
             <h2>{title}</h2>
-            {render(s, tempUnit)}
+            {render(s, tempUnit, showKnobs)}
             <div className="controls" hidden={!showControls}>
               {keys.map((k) => {
                 const [min, max, step] = RANGES[k];

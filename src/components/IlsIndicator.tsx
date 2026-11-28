@@ -134,7 +134,7 @@ export function IlsIndicator({
   const dots = range(1, 5, 1).flatMap((i) => [-i, i]);
 
   return (
-    <InstrumentFrame {...props} label={label}>
+    <InstrumentFrame {...props} label={label} knobs={[{ id: 'obs', label: 'OBS', position: 'bottom-left', angle: crs }]}>
       {/* Compass card, turned by the OBS so the selected course is at the top. */}
       <g data-testid="ils-card" style={motionStyle(`rotate(${-displayCourse}deg)`, duration)}>
         <g stroke="#eee" strokeLinecap="butt">
@@ -250,16 +250,6 @@ export function IlsIndicator({
       <FlagWindow x={CENTER + FLAG_OFFSET} y={CENTER} axis="v" visible={!hasGs} testId="ils-gs-flag" />
       {swing && <circle cx={GS_PIVOT_X} cy={CENTER} r="7" fill="#1a1a1a" stroke="#555" strokeWidth="2" />}
 
-      {/* OBS knob in the lower-left corner of the mounting plate. */}
-      {props.showBox !== false && (
-        <g data-testid="ils-obs">
-          <circle cx={44} cy={356} r="30" fill="#1a1a1a" stroke="#000" strokeWidth="2" />
-          <circle cx={44} cy={356} r="24" fill="#2a2a2a" stroke="#ddd" strokeWidth="2" />
-          <text x={44} y={356} fill="#eee" fontSize="13" fontWeight="bold" textAnchor="middle" dominantBaseline="central">
-            OBS
-          </text>
-        </g>
-      )}
     </InstrumentFrame>
   );
 }

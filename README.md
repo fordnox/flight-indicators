@@ -87,6 +87,7 @@ Every instrument accepts these props:
 | ------------------- | ------------------ | ------- | --------------------------------------------------------- |
 | `size`              | `number \| string` | `200`   | Width and height. A number means pixels; a string can be any CSS length, e.g. `"100%"`. |
 | `showBox`           | `boolean`          | `true`  | Draw the square mounting plate with screws.               |
+| `showKnobs`         | `boolean`          | `true`  | Draw the setting knobs on instruments that have them: OBS on `VorIndicator` and `IlsIndicator`, baro on `Altimeter`, PUSH (gyro set) on `HeadingIndicator`, HDG on `AdfIndicator` and the adjustment knob on `AttitudeIndicator`. Each knob's rim turns with the value it sets. |
 | `animationDuration` | `number`           | `300`   | Animation time in ms. `0` turns animation off.            |
 | `className`         | `string`           |         | Class for the root `<svg>`.                               |
 | `style`             | `CSSProperties`    |         | Inline style for the root `<svg>`.                        |
@@ -169,7 +170,7 @@ A VOR / course deviation indicator with an OBS card. The card turns so the selec
 
 ### `<IlsIndicator />`
 
-A crossed-needle VOR / ILS head with an OBS card, as found in many light aircraft. The vertical needle shows course (VOR or localizer) deviation and the horizontal needle glideslope deviation, each over a scale of 5 dots either side of the centre circle. Small windows show TO (upper right) or FR (lower left), and orange flags with arrows drop into the window at the bottom when the NAV signal is lost and into the window on the right when there is no glideslope. An OBS knob is drawn on the mounting plate. Course inputs work just like `<VorIndicator />`: give `course` and `radial`, or pass `deviation` and `toFrom` directly.
+A crossed-needle VOR / ILS head with an OBS card, as found in many light aircraft. The vertical needle shows course (VOR or localizer) deviation and the horizontal needle glideslope deviation, each over a scale of 5 dots either side of the centre circle. Small windows show TO (upper right) or FR (lower left), and orange flags with arrows drop into the window at the bottom when the NAV signal is lost and into the window on the right when there is no glideslope. Course inputs work just like `<VorIndicator />`: give `course` and `radial`, or pass `deviation` and `toFrom` directly.
 
 | Prop                  | Type                      | Default   | Description                                                        |
 | --------------------- | ------------------------- | --------- | ------------------------------------------------------------------ |
