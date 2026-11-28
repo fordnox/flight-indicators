@@ -9,6 +9,7 @@
 Modern SVG flight instruments for React, with no runtime dependencies.
 
 - Seventeen instruments: **Attitude**, **Heading**, **HSI** (horizontal situation indicator), **Airspeed**, **Altimeter**, **Vertical speed**, **Turn coordinator**, **VOR / CDI**, **VOR / ILS** (crossed needles with glideslope), **ADF**, **Radio panel** (NAV / ADF / DME), **Wind / runway**, **Fuel**, **Flaps**, **Angle of attack**, **Engine monitor** and a custom **Data panel** for any readouts you like
+- A classic Cessna 182T style steam-gauge set: **Tachometer** with hour meter, **Manifold pressure / fuel flow**, dual-needle **Fuel quantity**, **Oil temperature / pressure**, **Vacuum / ammeter** and **EGT / fuel flow** gauges (or build your own with **DualGauge**), a **Magnetic compass**, **Elevator trim**, a **Hobbs meter** and an **Annunciator** strip
 - Plus **RadioStack**, an interactive NAV / ADF / DME radio with editable standby frequencies, and **DigitalClock**, an interactive panel clock with OAT and voltmeter, flight time, a stopwatch / count-down timer and alarms
 - Pure SVG with no image files, so instruments stay sharp at any size and work with any bundler
 - Written in TypeScript and ships its type declarations
@@ -48,6 +49,15 @@ import {
   EngineIndicator,
   DataPanel,
   DigitalClock,
+  Tachometer,
+  ManifoldFuelFlowGauge,
+  FuelQuantityGauge,
+  OilGauge,
+  VacuumAmmeterGauge,
+  MagneticCompass,
+  TrimIndicator,
+  HobbsMeter,
+  AnnunciatorPanel,
 } from 'flight-indicators';
 
 export function Panel({ data }) {
@@ -69,6 +79,15 @@ export function Panel({ data }) {
       <FuelIndicator capacity={26} tanks={[{ name: 'Left', quantity: data.fuelL }, { name: 'Right', quantity: data.fuelR }]} />
       <FlapIndicator flaps={data.flaps} airspeed={data.ias} speedLimits={[{ flaps: 0, speed: 160 }, { flaps: 10, speed: 110 }]} />
       <EngineIndicator manifold={{ value: data.map }} rpm={{ value: data.rpm }} cht={data.cht} egt={data.egt} fuelLeft={data.fuelL} fuelRight={data.fuelR} />
+      <Tachometer rpm={data.rpm} hours={data.tachHours} />
+      <ManifoldFuelFlowGauge manifold={data.map} fuelFlow={data.fuelFlow} />
+      <FuelQuantityGauge leftQuantity={data.fuelL} rightQuantity={data.fuelR} />
+      <OilGauge temperature={data.oilTemp} pressure={data.oilPress} />
+      <VacuumAmmeterGauge vacuum={data.suction} amps={data.amps} />
+      <MagneticCompass heading={data.heading} />
+      <TrimIndicator trim={data.elevatorTrim} />
+      <HobbsMeter hours={data.hobbs} running={data.oilPress > 20} />
+      <AnnunciatorPanel lights={{ fuel: data.fuelL < 5 ? 'left' : false, oil: data.oilPress < 20, volts: data.busVolts < 24.5 }} />
       <DataPanel
         heading="Radios"
         fields={[
@@ -395,6 +414,84 @@ Scaled gauges share one shape, `EngineGauge`: `{ value, min, max, green?, yellow
 | `fuelRight`       | `number`          |                | Right tank quantity.                                               |
 | `fuelCapacity`    | `number`          | `30`           | Full quantity of each tank, used to fill the tank icons.           |
 | `fuelUnit`        | `string`          | `"GAL"`        | Printed under the fuel quantities.                                 |
+
+### `<Tachometer />`
+
+An analog tachometer marked in hundreds of RPM, with a green operating arc, a red line and an optional engine hour meter (rolling drums, tenths on the white drum) in the lower half of the dial.
+
+| Prop      | Type                       | Default        | Description                                               |
+| --------- | -------------------------- | -------------- | --------------------------------------------------------- |
+| `rpm`     | `number`                   | `0`            | Engine speed. Clamped to `0…max`.                         |
+| `max`     | `number`                   | `3500`         | Top of the scale.                                         |
+| `green`   | `[number, number] \| null` | `[2000, 2400]` | Green arc. `null` hides it.                               |
+| `redline` | `number \| null`           | `2400`         | Red line. `null` hides it.                                |
+| `hours`   | `number`                   |                | Engine hours on the hour meter. Leave it out to hide the meter. |
+
+### `<DualGauge />` and the dual-needle engine gauges
+
+The small round engine gauges of a Cessna 172 / 182 panel: two independent scales in one dial, each needle pivoting at its own edge so the two meet in the middle. Both scales read upwards. `DualGauge` is the generic version; five presets come with Cessna 182T style scales:
+
+| Component               | Props                              | Left needle                         | Right needle                           |
+| ----------------------- | ---------------------------------- | ----------------------------------- | -------------------------------------- |
+| `FuelQuantityGauge`     | `leftQuantity`, `rightQuantity`    | Left tank, 0–44 gal                 | Right tank, 0–44 gal                   |
+| `OilGauge`              | `temperature`, `pressure`          | Oil temp 75–250 °F, green 100–245   | Oil pressure 0–115 PSI, green 50–90    |
+| `VacuumAmmeterGauge`    | `vacuum`, `amps`                   | Suction 3–7 inHg, green 4.5–5.5     | Centre-zero ammeter −60…+60 A          |
+| `EgtFuelFlowGauge`      | `egt`, `fuelFlow`                  | EGT 1250–1650 °F, unnumbered        | Fuel flow 0–20 GPH                     |
+| `ManifoldFuelFlowGauge` | `manifold`, `fuelFlow`             | Manifold pressure 10–35 inHg, green 15–23 | Fuel flow 0–20 GPH               |
+
+Every preset also takes `leftScale` and `rightScale` to override any part of its scales, e.g. `leftScale={{ min: 25, max: 120, unit: '°C' }}`. The default scales are exported as `FUEL_QUANTITY_SCALE`, `OIL_TEMPERATURE_SCALE`, `OIL_PRESSURE_SCALE`, `VACUUM_SCALE`, `AMMETER_SCALE`, `EGT_SCALE`, `FUEL_FLOW_SCALE` and `MANIFOLD_SCALE`. Check the limits against your own aircraft's POH.
+
+`DualGauge` props:
+
+| Prop       | Type             | Default | Description                                         |
+| ---------- | ---------------- | ------- | --------------------------------------------------- |
+| `left`     | `DualGaugeScale` | 0–100   | Left scale and needle.                              |
+| `right`    | `DualGaugeScale` | 0–100   | Right scale and needle.                             |
+| `label`    | `string`         |         | Caption across the top of the dial.                 |
+| `sublabel` | `string`         |         | Caption across the bottom of the dial.              |
+
+Each `DualGaugeScale`: `{ value, min, max, label, unit, marks, ticks, green, yellow, low, high, decimals }`. `marks` are the numbered scale positions (a number, or `{ value, text }` to print text such as `"F"`); `ticks` is the number of minor tick intervals; `green` and `yellow` are `[from, to]` arcs; `low` and `high` are red limit lines. Values are clamped to the scale.
+
+### `<MagneticCompass />`
+
+The wet ("whiskey") compass on the glareshield: the card floats behind a window with a vertical lubber line. As on the real thing you read the back of the card, so the numbers grow to the left: heading north, the 3 and 6 are to the left of the lubber line.
+
+| Prop            | Type                                  | Default | Description                                                 |
+| --------------- | ------------------------------------- | ------- | ----------------------------------------------------------- |
+| `heading`       | `number`                              | `0`     | Magnetic heading in degrees. Takes the shortest way round.  |
+| `deviationCard` | `Array<{ for: number; steer: number }>` |       | Compass correction card printed under the window (up to six columns). |
+
+### `<TrimIndicator />`
+
+Elevator trim wheel and position indicator as on the pedestal: NOSE DOWN at the top, NOSE UP at the bottom, a white TAKE OFF band and a pointer. The wheel's ribs roll with the trim.
+
+| Prop      | Type                       | Default        | Description                                                  |
+| --------- | -------------------------- | -------------- | ------------------------------------------------------------ |
+| `trim`    | `number`                   | `0`            | `-1` full nose down, `0` neutral, `1` full nose up.          |
+| `takeoff` | `[number, number] \| null` | `[0.05, 0.35]` | Take-off range on the same scale. `null` hides it.           |
+
+### `<HobbsMeter />`
+
+A Hobbs (flight hour) meter: rolling drums with tenths on a white drum, and a small indicator wheel that turns while the meter runs. It is a rectangular panel item: `size` sets the width and the height follows. `drumPositions(value, digits)` is exported if you want to draw drums of your own.
+
+| Prop      | Type      | Default   | Description                                  |
+| --------- | --------- | --------- | -------------------------------------------- |
+| `hours`   | `number`  | `0`       | Hours run.                                   |
+| `digits`  | `number`  | `6`       | Number of drums, tenths included.            |
+| `running` | `boolean` | `false`   | Turns the running indicator.                 |
+| `label`   | `string`  | `"HOURS"` | Caption above the counter.                   |
+
+### `<AnnunciatorPanel />`
+
+The annunciator strip above the panel: legends stay dark until lit in red (warning), amber (caution) or green (advisory). Split legends such as `L FUEL R` light only the side with the fault. The default set is the Cessna 182T's: `L FUEL R`, `OIL PRESS`, `PITCH TRIM`, `L VAC R` and `VOLTS` (exported as `DEFAULT_ANNUNCIATORS`, ids `fuel`, `oil`, `trim`, `vac`, `volts`). Like the Hobbs meter it is rectangular, so `size` sets the width.
+
+| Prop           | Type                                    | Default                 | Description                                         |
+| -------------- | --------------------------------------- | ----------------------- | --------------------------------------------------- |
+| `annunciators` | `Annunciator[]`                         | `DEFAULT_ANNUNCIATORS`  | Legends `{ id, label, level?, split? }`, laid out in up to two rows. |
+| `lights`       | `Record<string, AnnunciatorState>`      | `{}`                    | Which lights are on, by id: `true`, or `"left"` / `"right"` / `"both"` for split legends. |
+| `test`         | `boolean`                               | `false`                 | Lamp test: lights every legend.                     |
+
+Example: `<AnnunciatorPanel lights={{ fuel: 'left', oil: true }} />`.
 
 ### `<DataPanel />`
 

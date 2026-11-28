@@ -20,6 +20,18 @@ import {
   VerticalSpeed,
   VorIndicator,
   WindIndicator,
+  AnnunciatorPanel,
+  DualGauge,
+  EgtFuelFlowGauge,
+  FuelQuantityGauge,
+  HobbsMeter,
+  MagneticCompass,
+  ManifoldFuelFlowGauge,
+  OilGauge,
+  Tachometer,
+  TrimIndicator,
+  VacuumAmmeterGauge,
+  drumPositions,
   formatAdf,
   formatDme,
   formatNav,
@@ -53,6 +65,17 @@ describe('rendering', () => {
     ['engine', <EngineIndicator />],
     ['flap', <FlapIndicator />],
     ['aoa', <AoaIndicator />],
+    ['dual', <DualGauge />],
+    ['fuel-qty', <FuelQuantityGauge />],
+    ['oil', <OilGauge />],
+    ['vac-amp', <VacuumAmmeterGauge />],
+    ['egt-ff', <EgtFuelFlowGauge />],
+    ['map-ff', <ManifoldFuelFlowGauge />],
+    ['tach', <Tachometer />],
+    ['compass', <MagneticCompass />],
+    ['trim', <TrimIndicator />],
+    ['hobbs', <HobbsMeter />],
+    ['annunciator', <AnnunciatorPanel />],
   ])('%s renders an accessible svg', (_, el) => {
     const { container } = render(el);
     const svg = container.querySelector('svg')!;
@@ -1010,5 +1033,118 @@ describe('DigitalClock', () => {
     expect(formatTimer(0)).toBe('00:00');
     expect(formatTimer(125)).toBe('02:05');
     expect(formatTimer(3600 + 23 * 60)).toBe('01:23');
+  });
+});
+
+describe('DualGauge', () => {
+  it('swings each needle from its own edge, both scales reading upwards', () => {
+    const { container } = render(<FuelQuantityGauge leftQuantity={22} rightQuantity={11} />);
+    // Left: 90° + 56° at empty, 90° − 56° at full. Right mirrors it about 270°.
+    expect(transformOf('dual-left-needle')).toBe('rotate(90deg)');
+    expect(transformOf('dual-right-needle')).toBe('rotate(242deg)');
+    expect(container.querySelector('title')!.textContent).toBe('FUEL QTY: L 22 GAL, R 11 GAL');
+  });
+
+  it('clamps to the scale, survives NaN and takes scale overrides', () => {
+    const { container, rerender } = render(<OilGauge temperature={999} pressure={NaN} />);
+    expect(transformOf('dual-left-needle')).toBe('rotate(34deg)');
+    expect(transformOf('dual-right-needle')).toBe('rotate(214deg)');
+    expect(container.querySelector('title')!.textContent).toBe('OIL: OIL TEMP 250 °F, OIL PRESS 0 PSI');
+    rerender(<OilGauge temperature={50} leftScale={{ min: 0, max: 100, unit: '°C' }} pressure={57.5} />);
+    expect(transformOf('dual-left-needle')).toBe('rotate(90deg)');
+    expect(container.querySelector('title')!.textContent).toBe('OIL: OIL TEMP 50 °C, OIL PRESS 58 PSI');
+  });
+
+  it('labels the vacuum / ammeter, EGT / FF and MAP / FF presets', () => {
+    const { container } = render(
+      <>
+        <VacuumAmmeterGauge vacuum={5} amps={-60} />
+        <EgtFuelFlowGauge egt={1450} fuelFlow={12.5} />
+        <ManifoldFuelFlowGauge manifold={23.4} fuelFlow={13} />
+      </>,
+    );
+    expect([...container.querySelectorAll('title')].map((t) => t.textContent)).toEqual([
+      'VAC / AMP: VAC 5.0 IN HG, AMP -60 AMPS',
+      'EGT / FF: EGT 1450 °F, FUEL FLOW 12.5 GAL/HR',
+      'MAP / FF: MAN PRESS 23.4 IN HG, FUEL FLOW 13.0 GAL/HR',
+    ]);
+  });
+});
+
+describe('Tachometer', () => {
+  it('turns the needle through 270° and shows the hour meter only when given hours', () => {
+    const { container, rerender } = render(<Tachometer rpm={1750} />);
+    expect(transformOf('tach-needle')).toBe('rotate(0deg)');
+    expect(screen.queryByTestId('tach-hours')).toBeNull();
+    rerender(<Tachometer rpm={9000} hours={1234.5} />);
+    expect(transformOf('tach-needle')).toBe('rotate(135deg)');
+    expect(screen.getByTestId('tach-hours')).toBeTruthy();
+    expect(container.querySelector('title')!.textContent).toBe('Tachometer: 3500 RPM, 1234.5 hours');
+  });
+});
+
+describe('Odometer drums', () => {
+  it('rolls the tenths drum smoothly and carries higher drums only past 9', () => {
+    expect(drumPositions(1234.5, 6)).toEqual([5, 4, 3, 2, 1, 0]);
+    expect(drumPositions(9.95, 3)).toEqual([9.5, 9.5, 0.5]);
+    expect(drumPositions(12.34, 3)).toEqual([3.4, 2, 1]);
+    // Wraps past the top of the counter.
+    expect(drumPositions(100.2, 3)).toEqual([2, 0, 0]);
+  });
+
+  it('shows hours on the Hobbs meter with a running indicator', () => {
+    const { container } = render(<HobbsMeter hours={1234.5} running />);
+    expect(container.querySelector('title')!.textContent).toBe('HOURS: 1234.5, running');
+    expect(screen.getByTestId('hobbs-running').getAttribute('data-running')).toBe('true');
+    expect(screen.getByTestId('hobbs-drum-1').getAttribute('transform')).toBe('translate(0 -208)');
+    expect(container.querySelector('svg')!.getAttribute('height')).toBe('85');
+  });
+});
+
+describe('MagneticCompass', () => {
+  it('moves the card so numbers grow to the left of the lubber line', () => {
+    const { container, rerender } = render(<MagneticCompass heading={20} />);
+    expect(transformOf('compass-card')).toBe('translate(80px, 0px)');
+    expect(container.querySelector('title')!.textContent).toBe('Magnetic compass: 020°');
+    // 30 is drawn left of N on the card strip.
+    const x = (t: string) => Number([...container.querySelectorAll('text')].find((n) => n.textContent === t)!.getAttribute('x'));
+    expect(x('3')).toBeLessThan(x('N'));
+    expect(screen.queryByTestId('compass-deviation-card')).toBeNull();
+    rerender(<MagneticCompass heading={0} deviationCard={[{ for: 0, steer: 2 }, { for: 90, steer: 88 }]} />);
+    expect(screen.getByTestId('compass-deviation-card').textContent).toBe('FORSTEERN2E88');
+  });
+});
+
+describe('TrimIndicator', () => {
+  it('moves the pointer and wheel and flags the take-off range', () => {
+    const { container, rerender } = render(<TrimIndicator trim={0.2} />);
+    expect(transformOf('trim-pointer')).toBe('translate(0px, 25.2px)');
+    expect(container.querySelector('title')!.textContent).toBe('Elevator trim: 20% nose up, take-off range');
+    rerender(<TrimIndicator trim={-5} takeoff={null} />);
+    expect(transformOf('trim-pointer')).toBe('translate(0px, -126px)');
+    expect(transformOf('trim-wheel')).toBe('translate(0px, -140px)');
+    expect(screen.queryByTestId('trim-takeoff')).toBeNull();
+    expect(container.querySelector('title')!.textContent).toBe('Elevator trim: 100% nose down');
+  });
+});
+
+describe('AnnunciatorPanel', () => {
+  it('lights legends by id, split legends by side', () => {
+    const { container } = render(<AnnunciatorPanel lights={{ fuel: 'left', oil: true }} />);
+    expect(container.querySelector('title')!.textContent).toBe('Annunciator: L FUEL, OIL PRESS');
+    expect(screen.getByTestId('annunciator-fuel').getAttribute('data-lit')).toBe('true');
+    expect(screen.getByTestId('annunciator-fuel-left').getAttribute('fill')).toBe('#ffb000');
+    expect(screen.getByTestId('annunciator-fuel-right').getAttribute('fill')).toBe('#3a3a3a');
+    expect(screen.getByTestId('annunciator-volts').getAttribute('data-lit')).toBe('false');
+  });
+
+  it('lights everything on lamp test and accepts a custom set', () => {
+    const { container, rerender } = render(<AnnunciatorPanel test />);
+    expect(container.querySelectorAll('[data-lit="true"]')).toHaveLength(5);
+    expect(container.querySelector('title')!.textContent).toBe('Annunciator: L FUEL R, OIL PRESS, PITCH TRIM, L VAC R, VOLTS');
+    rerender(<AnnunciatorPanel annunciators={[{ id: 'ap', label: 'AP', level: 'advisory' }]} lights={{ ap: true }} />);
+    expect(container.querySelector('title')!.textContent).toBe('Annunciator: AP');
+    rerender(<AnnunciatorPanel lights={{}} />);
+    expect(container.querySelector('title')!.textContent).toBe('Annunciator: all clear');
   });
 });

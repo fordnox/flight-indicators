@@ -35,4 +35,39 @@ export {
   type UpperDisplay,
   type ClockAlarm,
 } from './components/DigitalClock';
+export {
+  DualGauge,
+  FuelQuantityGauge,
+  OilGauge,
+  VacuumAmmeterGauge,
+  EgtFuelFlowGauge,
+  ManifoldFuelFlowGauge,
+  FUEL_QUANTITY_SCALE,
+  OIL_TEMPERATURE_SCALE,
+  OIL_PRESSURE_SCALE,
+  VACUUM_SCALE,
+  AMMETER_SCALE,
+  EGT_SCALE,
+  FUEL_FLOW_SCALE,
+  MANIFOLD_SCALE,
+  type DualGaugeProps,
+  type DualGaugeScale,
+  type FuelQuantityGaugeProps,
+  type OilGaugeProps,
+  type VacuumAmmeterGaugeProps,
+  type EgtFuelFlowGaugeProps,
+  type ManifoldFuelFlowGaugeProps,
+} from './components/DualGauge';
+export { Tachometer, type TachometerProps } from './components/Tachometer';
+export { MagneticCompass, type MagneticCompassProps } from './components/MagneticCompass';
+export { TrimIndicator, type TrimIndicatorProps } from './components/TrimIndicator';
+export { HobbsMeter, type HobbsMeterProps } from './components/HobbsMeter';
+export { drumPositions } from './components/Odometer';
+export {
+  AnnunciatorPanel,
+  DEFAULT_ANNUNCIATORS,
+  type AnnunciatorPanelProps,
+  type Annunciator,
+  type AnnunciatorState,
+} from './components/AnnunciatorPanel';
 export type { InstrumentProps } from './components/Instrument';

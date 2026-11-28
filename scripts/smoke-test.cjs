@@ -5,7 +5,7 @@ const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const FI = require('flight-indicators');
 
-const expected = ['AdfIndicator', 'Airspeed', 'Altimeter', 'AoaIndicator', 'AttitudeIndicator', 'DataPanel', 'DigitalClock', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'HeadingIndicator', 'HsiIndicator', 'IlsIndicator', 'RadioPanel', 'RadioStack', 'TurnCoordinator', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
+const expected = ['AdfIndicator', 'Airspeed', 'Altimeter', 'AnnunciatorPanel', 'AoaIndicator', 'AttitudeIndicator', 'DataPanel', 'DigitalClock', 'DualGauge', 'EgtFuelFlowGauge', 'EngineIndicator', 'FlapIndicator', 'FuelIndicator', 'FuelQuantityGauge', 'HeadingIndicator', 'HobbsMeter', 'HsiIndicator', 'IlsIndicator', 'MagneticCompass', 'ManifoldFuelFlowGauge', 'OilGauge', 'RadioPanel', 'RadioStack', 'Tachometer', 'TrimIndicator', 'TurnCoordinator', 'VacuumAmmeterGauge', 'VerticalSpeed', 'VorIndicator', 'WindIndicator'];
 // Interactive controls (an HTML group, or an svg group with buttons); everything else is an SVG instrument.
 const controls = ['RadioStack', 'DigitalClock'];
 // Components are the PascalCase exports; helpers and constants are filtered out.

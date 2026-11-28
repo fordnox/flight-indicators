@@ -20,18 +20,18 @@ export function polar(r: number, deg: number, cx = CENTER, cy = CENTER): [number
 }
 
 /** SVG path for an arc of radius `r` going clockwise from `startDeg` to `endDeg`. */
-export function arcPath(r: number, startDeg: number, endDeg: number): string {
-  const [x1, y1] = polar(r, startDeg);
-  const [x2, y2] = polar(r, endDeg);
+export function arcPath(r: number, startDeg: number, endDeg: number, cx = CENTER, cy = CENTER): string {
+  const [x1, y1] = polar(r, startDeg, cx, cy);
+  const [x2, y2] = polar(r, endDeg, cx, cy);
   const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
   const sweep = endDeg >= startDeg ? 1 : 0;
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} ${sweep} ${x2} ${y2}`;
 }
 
 /** Radial tick line between radii `r1` and `r2` at angle `deg`. */
-export function tickPath(r1: number, r2: number, deg: number): string {
-  const [x1, y1] = polar(r1, deg);
-  const [x2, y2] = polar(r2, deg);
+export function tickPath(r1: number, r2: number, deg: number, cx = CENTER, cy = CENTER): string {
+  const [x1, y1] = polar(r1, deg, cx, cy);
+  const [x2, y2] = polar(r2, deg, cx, cy);
   return `M ${x1} ${y1} L ${x2} ${y2}`;
 }
 

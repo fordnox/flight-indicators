@@ -153,3 +153,47 @@ export function InstrumentFrame({
 export function Hub({ r = 14 }: { r?: number }) {
   return <circle cx={CENTER} cy={CENTER} r={r} fill="#2a2a2a" stroke="#555" strokeWidth="2" />;
 }
+
+interface PanelFrameProps extends InstrumentProps {
+  label: string;
+  /** viewBox width. */
+  width: number;
+  /** viewBox height. */
+  height: number;
+  children: ReactNode;
+}
+
+/**
+ * Shell for rectangular panel items (annunciators, hour meter): a mounting plate with two screws.
+ * `size` sets the width; the height follows the aspect ratio.
+ */
+export function PanelFrame({ size = 200, showBox = true, className, style, title, label, width, height, children }: PanelFrameProps) {
+  const titleId = useSvgId('fi-title');
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox={`0 0 ${width} ${height}`}
+      width={size}
+      height={typeof size === 'number' ? Math.round((size * height) / width * 100) / 100 : undefined}
+      role="img"
+      aria-labelledby={titleId}
+      className={className}
+      style={{ display: 'inline-block', userSelect: 'none', aspectRatio: `${width} / ${height}`, ...style }}
+      fontFamily="'Helvetica Neue', Arial, sans-serif"
+    >
+      <title id={titleId}>{title ?? label}</title>
+      {showBox && (
+        <g>
+          <rect x="2" y="2" width={width - 4} height={height - 4} rx="14" fill="#232323" stroke="#0d0d0d" strokeWidth="4" />
+          {[22, width - 22].map((x) => (
+            <g key={x}>
+              <circle cx={x} cy={height / 2} r="9" fill="#3a3a3a" stroke="#111" strokeWidth="2" />
+              <path d={`M ${x - 6} ${height / 2 + 2} L ${x + 6} ${height / 2 - 2}`} stroke="#111" strokeWidth="2.5" />
+            </g>
+          ))}
+        </g>
+      )}
+      {children}
+    </svg>
+  );
+}
