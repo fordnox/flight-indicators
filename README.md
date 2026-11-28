@@ -4,7 +4,7 @@
 
 **[Live demo](https://flight-indicators.harvis.page)**: every instrument running on simulated flight data, with sliders to drive them by hand.
 
-![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading, vertical speed, engine, VOR, fuel, flaps, angle of attack, wind / runway and data panel instruments](https://raw.githubusercontent.com/fordnox/flight-indicators/main/docs/demo.png)
+![flight-indicators demo: airspeed, attitude, altimeter, turn coordinator, heading, vertical speed, engine, VOR, VOR / ILS, HSI, ADF, radio, fuel, flaps, tachometer, manifold pressure / fuel flow, fuel quantity, oil, vacuum / ammeter, EGT / fuel flow, annunciator, magnetic compass, elevator trim, Hobbs meter, clock, angle of attack, wind / runway and data panel instruments](https://raw.githubusercontent.com/fordnox/flight-indicators/main/docs/demo.png)
 
 Modern SVG flight instruments for React, with no runtime dependencies.
 
