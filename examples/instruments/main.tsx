@@ -346,6 +346,7 @@ function App() {
           <a href={REPO_URL} target="_blank" rel="noreferrer">
             <GithubIcon /> GitHub
           </a>
+          <a href="./navigation.html">VOR &amp; ILS examples</a>
           <a href={NPM_URL} target="_blank" rel="noreferrer">
             <NpmIcon /> npm
           </a>

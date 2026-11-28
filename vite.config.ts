@@ -10,5 +10,12 @@ export default defineConfig({
   build: {
     outDir: '../../demo-dist',
     emptyOutDir: true,
+    // Gallery plus the VOR / ILS page.
+    rollupOptions: {
+      input: {
+        main: 'examples/instruments/index.html',
+        navigation: 'examples/instruments/navigation.html',
+      },
+    },
   },
 });
