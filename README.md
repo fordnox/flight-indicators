@@ -335,6 +335,7 @@ Each `DataField`:
 Examples live under [`examples/`](examples), one folder each:
 
 - [`examples/instruments`](examples/instruments): the gallery behind the live demo, with every instrument on simulated flight data and sliders to drive each one by hand.
+- [`examples/instruments/navigation.html`](examples/instruments/navigation.tsx) ([live](https://flight-indicators.harvis.page/navigation.html)): VOR and ILS in depth. Track a radial around a VOR station on a map, fly an ILS approach with plan and profile views and LOC / GS failures, and browse snapshots of every needle and flag state with the props behind each one.
 - [IFR trainer](https://github.com/fordnox/ifr-trainer) (separate repository): a radio navigation simulator built with this library.
 
 ## Development
